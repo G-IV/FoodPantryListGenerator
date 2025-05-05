@@ -36,11 +36,19 @@
 *.x86_64
 *.hex
 
+# Release build files
+*.iobj
+*.exe.recipe
+
 # Debug files
 *.dSYM/
 *.su
 *.idb
 *.pdb
+*.ipdb
+*.log
+*.tlog
+*.lastbuildstate
 
 # Kernel Module Compile Results
 *.mod*
@@ -50,3 +58,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# CSV files
+*.csv
+
+# vcxproj files
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Files I think are unnecessary, but not sure about
+*.VC.db
+*.suo
+*.vsidx
