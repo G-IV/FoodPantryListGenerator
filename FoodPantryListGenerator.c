@@ -28,19 +28,19 @@ int main() {
     struct tm tm = *localtime(&t);
 
     // Open the CSV file (in append mode to add new data)
- 
-        
-    
+    // Build the file path
     sprintf(rootPath, "scanned_barcodes20%02d%02d%02d.csv", tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday);
     
     printf("Root Path: %s\n", rootPath);
     
-    
+	// Open the file in append mode
     file = fopen(rootPath, "a+");
     if (file == NULL) {
         printf("Error opening file!\n");
         return 1;
     }
+
+    // Review the file for number of records
     // Move to the beginning to count existing records
     rewind(file);
     while (fgets(line, sizeof(line), file) != NULL) {
