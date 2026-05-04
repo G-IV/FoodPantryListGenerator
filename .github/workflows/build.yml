@@ -57,6 +57,8 @@ jobs:
   # ---------------------------------------------------------------------------
   build:
     name: Build Windows .exe and create release
+    permissions:
+      contents: write
     needs: test
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
