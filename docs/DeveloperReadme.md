@@ -14,14 +14,15 @@ This document is for anyone who needs to modify, build, or deploy the FoodPantry
 2. [Why we use Python](#why-we-use-python)
 3. [Repository structure](#repository-structure)
 4. [Module reference](#module-reference)
-5. [Setting up a development environment](#setting-up-a-development-environment)
-6. [Running the tests](#running-the-tests)
-7. [Building the Windows executable](#building-the-windows-executable)
-8. [Releasing a new version](#releasing-a-new-version)
-9. [Deploying to the Surface Pro](#deploying-to-the-surface-pro)
-10. [Branching and versioning conventions](#branching-and-versioning-conventions)
-11. [Open issues and roadmap](#open-issues-and-roadmap)
-12. [Production environment](#production-environment)
+5. [Data formats](#data-formats)
+6. [Setting up a development environment](#setting-up-a-development-environment)
+7. [Running the tests](#running-the-tests)
+8. [Building the Windows executable](#building-the-windows-executable)
+9. [Releasing a new version](#releasing-a-new-version)
+10. [Deploying to the Surface Pro](#deploying-to-the-surface-pro)
+11. [Branching and versioning conventions](#branching-and-versioning-conventions)
+12. [Open issues and roadmap](#open-issues-and-roadmap)
+13. [Production environment](#production-environment)
 
 ---
 
@@ -65,10 +66,13 @@ FoodPantryListGenerator/
 │   ├── scanner.py               Parses raw barcode input into case numbers.
 │   └── csv_writer.py            Manages the output CSV file.
 │
-├── tests/                       Unit tests. One file per module.
+├── tests/                       Unit tests and test fixtures.
 │   ├── __init__.py
 │   ├── test_scanner.py          Tests for scanner.py
-│   └── test_csv_writer.py       Tests for csv_writer.py
+│   ├── test_csv_writer.py       Tests for csv_writer.py
+│   └── fixtures/                Synthetic CSV datasets for comparison feature.
+│       ├── sample_scanned_barcodes.csv
+│       └── sample_assistance_report.csv
 │
 ├── docs/                        Documentation.
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
@@ -78,8 +82,11 @@ FoodPantryListGenerator/
 │
 ├── .github/
 │   └── workflows/
-│       └── build.yml            GitHub Actions: runs tests on every push,
-│                                 builds the .exe when a version tag is pushed.
+│       ├── test.yml             Runs tests on every push and pull request
+│       │                         (ubuntu, windows, macos / Python 3.12).
+│       └── release.yml          Runs only on version tags (v*). Re-runs tests,
+│                                 builds the .exe on Windows, and creates a
+│                                 GitHub Release with the .exe attached.
 │
 ├── pyproject.toml               Configures pytest test discovery.
 ├── requirements-dev.txt         Development dependencies (pytest, pyinstaller).
@@ -112,6 +119,96 @@ Manages the output CSV file: building the filename, counting existing rows on st
 ### `tests/test_scanner.py` and `tests/test_csv_writer.py`
 
 Unit tests. Run them with `pytest` (see [Running the tests](#running-the-tests)). Each test is named to describe the scenario it covers — reading the test names gives you a plain-English summary of what the modules are expected to do.
+
+---
+
+## Data formats
+
+This section describes the two CSV files involved in a pantry session. Understanding them is essential for working on any feature that reads, compares, or reports on pantry data (see [Issue #2](https://github.com/G-IV/FoodPantryListGenerator/issues/2)).
+
+### Scanner output — `scanned_barcodes20YYMMDD.csv`
+
+Produced by `FoodPantryListGenerator.exe` during a session. Each row represents one scan event, appended in the order scans occurred.
+
+**No header row.**
+
+| Position | Field | Type | Example |
+|----------|-------|------|---------|
+| 1 | Case number | String — `C` prefix + digits | `C1052089` |
+| 2–5 | *(empty)* | Reserved for Oasis mail-merge fields | |
+| 6 | Timestamp | `M/D/YYYY H:MM` (no leading zeros) | `4/25/2026 8:00` |
+
+```
+C1052089,,,,,4/25/2026 8:00
+C1052090,,,,,4/25/2026 8:03
+```
+
+Key behaviours:
+
+- Rows are in chronological order (order of scanning).
+- No deduplication — the same case can appear more than once if the barcode was scanned multiple times.
+- The file may already contain records from a prior session when the app starts; new scans are appended.
+- The four empty fields exist for alignment with an Oasis mail-merge. **Do not change the row format without confirming with staff that the merge process still works.**
+
+### Oasis assistance report — `*assistance_report*.csv`
+
+Exported from the Oasis case management system after a session. One row per assistance record logged by a volunteer agent.
+
+**12-line header section** precedes the column headers (rows 1–12 are the Filters/Summary block produced by Oasis). The column header row is row 13.
+
+```
+Filters:,,,,,,,
+Include private records:,Yes,,,,,,
+Date range:,"Apr 5, 2025 to Apr 5, 2025",,,,,,
+Category:,Food Pantry: Pantry Assistance,,,,,,
+,,,,,,,
+Summary:,,,,,,,
+Assistance count:,59,,,,,,
+Case count:,50,,,,,,
+Household count:,50,,,,,,
+Member count:,188,,,,,,
+,,,,,,,
+Case #,First Name,Middle Name,Last Name,Suffix,Household Size,Assistance Date,Agent Name
+```
+
+| Column | Field | Notes |
+|--------|-------|-------|
+| 1 | Case # | Same `C`-prefix format as scanner output — directly comparable, no transformation needed |
+| 2 | First Name | |
+| 3 | Middle Name | May be empty |
+| 4 | Last Name | |
+| 5 | Suffix | May be empty |
+| 6 | Household Size | Integer |
+| 7 | Assistance Date | `M/D/YYYY H:MM` — represents the 5-minute batch window in which the agent entered the record, not the exact arrival time |
+| 8 | Agent Name | Name of the volunteer who entered the record |
+
+Key behaviours:
+
+- The same case can appear more than once if a volunteer entered it multiple times, or if the case was served across multiple time windows.
+- Oasis timestamps are 5-minute batch windows — an `Assistance Date` of `9:35` means the record was entered between `9:30` and `9:35`. Exact timestamp matching across the two files is not meaningful.
+- This file contains PII (names, household sizes, agent names). **Never commit a real Oasis report to the repository.** Real reports belong in `docs/prev_reports/`, which is gitignored.
+
+### Ideal state
+
+A clean session produces a **1-to-1 correspondence** between the two files:
+
+- Every case in the scanner file appears exactly once in the Oasis report.
+- Every case in the Oasis report appears exactly once in the scanner file.
+
+In practice this is the common case, but it is never guaranteed.
+
+### What can happen
+
+| Scenario | Scanner | Oasis | Notes |
+|----------|---------|-------|-------|
+| Clean match | Once | Once | Most common |
+| Entered multiple times in Oasis | Once | Multiple | Possible data-entry error |
+| Scanned multiple times | Multiple | Once | Accidental re-scan |
+| Multiple in both | Multiple | Multiple | Re-scanned and re-entered |
+| Scanned only | Once or multiple | Absent | Volunteer forgot to log in Oasis, or scanner issue |
+| Oasis only | Absent | Once or multiple | Arrived before scanner was ready, or scan missed |
+
+Synthetic test fixtures covering all of these scenarios are in `tests/fixtures/`. See the [fixture README](../tests/fixtures/README.md) for the scenario-to-case-number mapping used in those files.
 
 ---
 
@@ -231,7 +328,7 @@ For verbose output that shows each test name and result:
 pytest -v
 ```
 
-Tests run on every push via GitHub Actions (see `.github/workflows/build.yml`). A pull request to `main` will not be considered ready to merge if tests are failing.
+Tests run on every push via GitHub Actions (see `.github/workflows/test.yml`). A pull request to `main` will not be considered ready to merge if tests are failing.
 
 ---
 
