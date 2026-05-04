@@ -1,0 +1,19 @@
+# Development dependencies
+# Python version: 3.12 (must match .github/workflows/build.yml and local .venv)
+# Install with:
+#   python3.12 -m venv .venv          (create virtual environment — first time only)
+#   source .venv/bin/activate          (macOS/Linux)
+#   .venv\Scripts\activate             (Windows)
+#   pip install -r requirements-dev.txt
+#
+# These are NOT needed on the Surface Pro. They are only for developers
+# writing or testing code on their own machines.
+
+# Test runner
+pytest>=8.0
+
+# Builds the Windows .exe for deployment to C:\DoubleCheck\
+# Run: pyinstaller --onefile --name FoodPantryListGenerator FoodPantryListGenerator.py
+# Note: must be run on Windows to produce a Windows executable.
+# See docs/DeveloperReadme.md for the full build process.
+pyinstaller>=6.0

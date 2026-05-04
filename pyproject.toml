@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+# Run tests from the repository root: pytest
+# or with verbose output:           pytest -v
+testpaths = ["tests"]

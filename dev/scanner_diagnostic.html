@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Diagnostic — FoodPantryListGenerator</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    .barcode-box {
+      background: #fff;
+      border: 1px solid #ccc;
+      display: inline-block;
+      padding: 16px 24px;
+      margin: 12px 0;
+      text-align: center;
+    }
+    .barcode-label {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 6px;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.95rem;
+    }
+    .step { margin: 8px 0; }
+    .result-table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    .result-table th, .result-table td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .result-table th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+
+<h1>Scanner Diagnostic</h1>
+<p>
+  This page helps determine whether the Tera scanner adds a prefix and suffix
+  to scanned barcodes, or whether those characters are encoded in the barcode itself.
+  This affects how the application parses barcode input.
+</p>
+
+<h2>Step 1 — Start the application in diagnostic mode</h2>
+<p>
+  In your terminal, with the virtual environment active, run the application from
+  the <code>dev/output/</code> directory so test CSV output stays separate:
+</p>
+<pre><code>cd dev/output
+python ../../FoodPantryListGenerator.py</code></pre>
+<p>Leave the terminal visible so you can read what gets printed after each scan.</p>
+
+<h2>Step 2 — Scan the test barcodes below</h2>
+<p>
+  Each barcode encodes a different string. Scan each one and note exactly what
+  the application prints on screen after each scan. Record the results in Step 3.
+</p>
+<p>
+  <strong>Hold the scanner 4–8 inches from the screen.</strong>
+  The barcodes can be scanned directly from this page — you do not need to print them.
+</p>
+
+<!-- Barcode A: plain number only -->
+<div class="barcode-box">
+  <svg id="barcodeA"></svg>
+  <div class="barcode-label">Barcode A — encodes: <code>12345</code></div>
+</div>
+<br>
+
+<!-- Barcode B: number with leading zeros, as found on customer cards -->
+<div class="barcode-box">
+  <svg id="barcodeB"></svg>
+  <div class="barcode-label">Barcode B — encodes: <code>01052089</code></div>
+</div>
+
+<h2>Step 3 — Record what the application printed</h2>
+<p>
+  After scanning each barcode, look at what the application printed on the line
+  starting with <em>"Record N — Please scan a barcode:"</em> on the NEXT prompt.
+  The app prints the case number it parsed before asking for the next scan.
+  <br><br>
+  Compare your results to the table below:
+</p>
+
+<table class="result-table">
+  <thead>
+    <tr>
+      <th>Barcode</th>
+      <th>Encoded value</th>
+      <th>If app shows <code>C12345</code> or <code>C1052089</code></th>
+      <th>If app shows something else</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>A</td>
+      <td><code>12345</code></td>
+      <td>Scanner does NOT add prefix/suffix.<br>The <code>{[C]…}</code> wrapper is encoded in the real customer barcodes themselves.</td>
+      <td>Note exactly what was printed and share it with the developer.</td>
+    </tr>
+    <tr>
+      <td>B</td>
+      <td><code>01052089</code></td>
+      <td>Same conclusion as above.<br>Leading zeros are handled correctly.</td>
+      <td>Note exactly what was printed and share it with the developer.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Step 4 — Exit the application</h2>
+<p>Press <strong>Enter</strong> on a blank scan prompt to close the program.</p>
+<p>
+  A CSV file will have been created in <code>dev/output/</code>.
+  You can open it to see the raw output rows alongside the case numbers.
+  This file is gitignored and will not be committed.
+</p>
+
+<h2>After the diagnostic</h2>
+<p>
+  Share your results with the developer. The outcome determines whether the
+  real customer barcodes should be added to <code>dev/test_barcodes.html</code>
+  as plain numbers, or as the full <code>{[C]NNNNN}</code> encoded string.
+</p>
+
+<script>
+  JsBarcode("#barcodeA", "12345", {
+    format: "CODE128",
+    width: 2,
+    height: 80,
+    displayValue: true
+  });
+  JsBarcode("#barcodeB", "01052089", {
+    format: "CODE128",
+    width: 2,
+    height: 80,
+    displayValue: true
+  });
+</script>
+
+</body>
+</html>

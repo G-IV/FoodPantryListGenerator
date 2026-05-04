@@ -72,3 +72,24 @@ dkms.conf
 *.suo
 *.vsidx
 *.ipch
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# PyInstaller build output
+build/
+dist/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# pytest cache
+.pytest_cache/
+
+# Developer test output — CSV files written during local scanner testing
+dev/output/*.csv

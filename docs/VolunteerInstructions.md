@@ -100,3 +100,11 @@ This station, along with Station 1 in the foyer, will not close down until **12:
 5. Locate the file named `scanned_barcodes` followed by today's date (e.g., `scanned_barcodes20260104.csv`).
 6. Copy it to the **D: drive** (the thumb drive).
 7. Give the thumb drive to **Tina**, or leave it in the plastic box if you cannot find her.
+
+---
+
+## About the Scanner
+
+The scanner used at this station is the **Tera D5100 2D Wireless Barcode Scanner**. If you need the user manual (for example, to troubleshoot pairing the dongle or adjust scanner settings), it is available on the product page:
+
+https://tera-digital.com/products/2d-barcode-scanner-d5100
