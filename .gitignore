@@ -59,8 +59,12 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# CSV files
+# CSV files — ignore all by default; real pantry data must never be committed
 *.csv
+# Allow synthetic sample fixtures used for testing
+!tests/fixtures/*.csv
+# Explicitly protect the real pantry reports directory (contains PII)
+docs/prev_reports/
 
 # vcxproj files
 *.vcxproj
