@@ -1,0 +1,146 @@
+"""
+csv_writer.py — Output file management
+
+This module manages the CSV file that accumulates scanned case numbers
+over the course of a pantry day.
+
+Output file format
+------------------
+Filename:  scanned_barcodes20YYMMDD.csv  (e.g. scanned_barcodes20260504.csv)
+Location:  The program's working directory.
+           In production this is C:\\DoubleCheck\\ because the desktop
+           shortcut has its "Start in" field set to that directory.
+           See docs/DeveloperReadme.md for deployment details.
+
+Each row written to the file has 6 fields:
+
+    Field 1:    Case number     e.g. C1052089
+    Fields 2-5: Empty           Reserved for the Oasis report merge
+    Field 6:    Timestamp       e.g. 1/5/2026 9:07
+
+Example row:
+    C1052089,,,,,1/5/2026 9:07
+
+Why the empty fields?
+---------------------
+The output file is designed to be merged with the Oasis pantry assistance
+report. The empty fields align with columns in that report. Do not remove
+them or change their count without confirming the merge process still works
+with Tina or whoever is responsible for the downstream report.
+
+Append behavior
+---------------
+The file is opened in append mode so that data is never lost if the program
+is closed and reopened mid-pantry (e.g. if the screen goes dark and the
+volunteer accidentally opens a second window — see the Double Screen Problem
+section in docs/VolunteerInstructions.md). On startup, the program counts
+rows already in the file so the record counter resumes from where it left off.
+"""
+
+import datetime
+import os
+from typing import Optional
+
+
+def build_output_filename(date: datetime.date) -> str:
+    """
+    Return the dated CSV filename for a given date.
+
+    The filename format matches the original C implementation exactly to
+    preserve compatibility with any downstream processes that rely on the
+    naming convention.
+
+    Args:
+        date: The date to embed in the filename.
+
+    Returns:
+        Filename string, e.g. "scanned_barcodes20260504.csv"
+
+    Examples:
+        >>> import datetime
+        >>> build_output_filename(datetime.date(2026, 5, 4))
+        'scanned_barcodes20260504.csv'
+        >>> build_output_filename(datetime.date(2026, 12, 31))
+        'scanned_barcodes20261231.csv'
+    """
+    return f"scanned_barcodes20{date.strftime('%y%m%d')}.csv"
+
+
+def format_timestamp(dt: datetime.datetime) -> str:
+    """
+    Format a datetime as a non-zero-padded timestamp string.
+
+    This matches the intent of the original C implementation. The original
+    had a stray space before the hour (a bug in the C format string
+    "%d/%d/%d% d:%d") — that bug is intentionally NOT replicated here.
+    Minutes are zero-padded to two digits for readability.
+
+    The string is built manually rather than using strftime to avoid a
+    platform difference: non-zero-padded day/month requires "%-m" on
+    Linux/macOS but "%#m" on Windows. Manual formatting is portable.
+
+    Args:
+        dt: The datetime to format.
+
+    Returns:
+        Formatted string, e.g. "1/5/2026 9:07"
+
+    Examples:
+        >>> import datetime
+        >>> format_timestamp(datetime.datetime(2026, 1, 5, 9, 7))
+        '1/5/2026 9:07'
+        >>> format_timestamp(datetime.datetime(2026, 12, 25, 14, 30))
+        '12/25/2026 14:30'
+        >>> format_timestamp(datetime.datetime(2026, 1, 1, 0, 0))
+        '1/1/2026 0:00'
+    """
+    return f"{dt.month}/{dt.day}/{dt.year} {dt.hour}:{dt.minute:02d}"
+
+
+def count_existing_records(filepath: str) -> int:
+    """
+    Count the number of data rows already in the CSV file.
+
+    Called at program startup so the volunteer can see how many barcodes
+    have already been recorded. This supports the use case where the program
+    is closed and reopened mid-pantry — the record counter picks up where
+    it left off rather than restarting from 1.
+
+    Args:
+        filepath: Absolute or relative path to the CSV file.
+
+    Returns:
+        Number of rows in the file, or 0 if the file does not exist yet.
+    """
+    if not os.path.exists(filepath):
+        return 0
+
+    count = 0
+    with open(filepath, "r", encoding="utf-8") as f:
+        for _ in f:
+            count += 1
+    return count
+
+
+def append_record(
+    filepath: str,
+    case_number: str,
+    timestamp: datetime.datetime,
+) -> None:
+    """
+    Append a single scanned record to the CSV file.
+
+    Opens the file in append mode so existing records are never overwritten.
+    Creates the file if it does not exist yet.
+
+    Args:
+        filepath:    Absolute or relative path to the CSV file.
+        case_number: Normalized case number, e.g. "C1052089".
+        timestamp:   The datetime at which the barcode was scanned.
+    """
+    ts = format_timestamp(timestamp)
+
+    with open(filepath, "a", encoding="utf-8") as f:
+        # Five commas produce the four empty fields required for the
+        # downstream Oasis report merge. See module docstring for details.
+        f.write(f"{case_number},,,,, {ts}\n")
