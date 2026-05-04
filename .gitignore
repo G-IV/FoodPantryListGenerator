@@ -90,3 +90,6 @@ env/
 
 # pytest cache
 .pytest_cache/
+
+# Developer test output — CSV files written during local scanner testing
+dev/output/*.csv
