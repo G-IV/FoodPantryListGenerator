@@ -1,5 +1,10 @@
 # Development dependencies
-# Install with: pip install -r requirements-dev.txt
+# Python version: 3.12 (must match .github/workflows/build.yml and local .venv)
+# Install with:
+#   python3.12 -m venv .venv          (create virtual environment — first time only)
+#   source .venv/bin/activate          (macOS/Linux)
+#   .venv\Scripts\activate             (Windows)
+#   pip install -r requirements-dev.txt
 #
 # These are NOT needed on the Surface Pro. They are only for developers
 # writing or testing code on their own machines.

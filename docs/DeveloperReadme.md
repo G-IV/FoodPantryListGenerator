@@ -113,40 +113,97 @@ Unit tests. Run them with `pytest` (see [Running the tests](#running-the-tests))
 
 ## Setting up a development environment
 
-You will need Python 3.12 or later. Check with:
+### Python version
+
+This project targets **Python 3.12**. This is the version used in the GitHub Actions workflow and the version all developers should use locally. Using a different version risks subtle incompatibilities that only surface during the automated build or on another developer's machine.
+
+Check your current version with:
 
 ```
 python --version
 ```
 
+If you see anything other than `3.12.x`, install 3.12 before continuing (see platform instructions below).
+
+### Why use a virtual environment?
+
+A virtual environment is an isolated Python installation scoped to this project. You should always use one. Here's why it matters:
+
+- **Python version mismatches.** Your system may have Python 3.9 or 3.11 installed globally. Running `python` or `pip` without a virtual environment uses whatever version is on your system PATH, which may not be 3.12. A virtual environment lets you pin the exact version this project requires.
+- **Dependency isolation.** `pip install` without a virtual environment installs packages globally, which can conflict with other projects on your machine. A virtual environment keeps this project's dependencies (`pytest`, `pyinstaller`) separate.
+- **Reproducibility.** Another developer cloning the repo and following these steps will end up with the same environment you have.
+
+The `.venv/` directory is in `.gitignore` — virtual environments are machine-specific and should never be committed.
+
+---
+
 ### macOS
 
 ```bash
-# Install Python via Homebrew if you don't have it
+# Install Python 3.12 via Homebrew if you don't have it
 brew install python@3.12
+
+# Confirm the version
+python3.12 --version
 
 # Clone the repo
 git clone https://github.com/G-IV/FoodPantryListGenerator.git
 cd FoodPantryListGenerator
 
-# Install development dependencies
+# Create a virtual environment using Python 3.12 specifically
+python3.12 -m venv .venv
+
+# Activate the virtual environment
+# You will need to do this each time you open a new terminal for this project
+source .venv/bin/activate
+
+# Confirm the active Python version (should show 3.12.x)
+python --version
+
+# Install development dependencies into the virtual environment
 pip install -r requirements-dev.txt
 ```
+
+Your shell prompt will show `(.venv)` when the virtual environment is active. To deactivate it: `deactivate`.
+
+---
 
 ### Windows
 
-Download and install Python 3.12 from https://www.python.org/downloads/. During installation, check **"Add Python to PATH"**.
+Download and install Python 3.12 from https://www.python.org/downloads/. During installation, check **"Add Python to PATH"** and **"Add Python to environment variables"**.
 
 ```powershell
+# Confirm the version
+python --version
+
 # Clone the repo
 git clone https://github.com/G-IV/FoodPantryListGenerator.git
 cd FoodPantryListGenerator
 
-# Install development dependencies
+# Create a virtual environment
+python -m venv .venv
+
+# Activate the virtual environment
+# You will need to do this each time you open a new terminal for this project
+.venv\Scripts\activate
+
+# Confirm the active Python version (should show 3.12.x)
+python --version
+
+# Install development dependencies into the virtual environment
 pip install -r requirements-dev.txt
 ```
 
+Your shell prompt will show `(.venv)` when the virtual environment is active. To deactivate it: `deactivate`.
+
+> **Windows note:** If you see a permissions error running `.venv\Scripts\activate`, run this first in PowerShell:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
+---
+
 ### Running the application locally (without building the .exe)
+
+With the virtual environment active:
 
 ```bash
 python FoodPantryListGenerator.py
@@ -158,7 +215,7 @@ The output CSV will be written to whatever directory you run the command from.
 
 ## Running the tests
 
-From the repository root:
+Make sure your virtual environment is active (`source .venv/bin/activate` on macOS, `.venv\Scripts\activate` on Windows), then from the repository root:
 
 ```bash
 pytest
