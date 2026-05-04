@@ -34,3 +34,20 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+
+  # Aggregate job — this is the single check name required by the branch
+  # protection ruleset. It passes only when all matrix jobs above pass.
+  all-checks-pass:
+    name: All checks pass
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Verify all matrix jobs succeeded
+        run: |
+          if [[ "${{ needs.test.result }}" == "success" ]]; then
+            echo "All tests passed."
+          else
+            echo "One or more test jobs failed or were cancelled."
+            exit 1
+          fi
