@@ -1,31 +1,20 @@
-name: CI and Release
+name: Release
 
-# When this workflow runs
-# -----------------------
-# - Every push to any branch: runs the test suite on all platforms.
-# - Every pull request targeting main: runs the test suite.
-# - Every push of a version tag (e.g. v2.0.0): runs tests AND builds
-#   the Windows .exe, then attaches it to a GitHub Release automatically.
+# Runs only when a version tag is pushed (e.g. v2.1.0).
+# Builds FoodPantryListGenerator.exe on Windows and attaches it to a
+# GitHub Release automatically.
 #
 # To release a new version:
 #   git tag v2.1.0
 #   git push origin v2.1.0
-# GitHub Actions will do the rest. See docs/DeveloperReadme.md.
+#
+# See docs/DeveloperReadme.md for full workflow documentation.
 
 on:
   push:
-    branches: ["**"]
     tags: ["v*"]
-  pull_request:
-    branches: [main]
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # test — runs on every push and pull request, on all three platforms.
-  # Running on Windows confirms the code works on the target OS. Running on
-  # macOS and Linux catches platform-specific issues early for developers
-  # who work on those machines.
-  # ---------------------------------------------------------------------------
   test:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -49,18 +38,11 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
-  # ---------------------------------------------------------------------------
-  # build — runs only when a version tag is pushed (e.g. v2.0.0).
-  # Requires all tests to pass first (needs: test).
-  # Produces a single FoodPantryListGenerator.exe and attaches it to a
-  # GitHub Release that is created automatically.
-  # ---------------------------------------------------------------------------
   build:
     name: Build Windows .exe and create release
     permissions:
       contents: write
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
 
     steps:
@@ -85,5 +67,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/FoodPantryListGenerator.exe
-          # Automatically generates release notes from commits since the last tag
           generate_release_notes: true
