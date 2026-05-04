@@ -72,7 +72,9 @@ FoodPantryListGenerator/
 │
 ├── docs/                        Documentation.
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
-│   └── DeveloperReadme.md       This file.
+│   ├── DeveloperReadme.md       This file.
+│   └── TR-UM017-EN-ZQ-Ver.02.1.05-2022.9.16-S02.pdf
+│                                User manual for the Tera D5100 scanner.
 │
 ├── .github/
 │   └── workflows/
@@ -97,7 +99,9 @@ The entry point. It handles the main scanning loop: prompts for input, calls `pa
 
 Responsible for one thing: turning a raw string (from the scanner or typed manually) into a normalized case number like `C1052089`.
 
-The Tera scanner sends raw input in the format `{[C]01052089}`. This module strips the wrapper characters and leading zeros. If the input doesn't start with `{[C]`, it is treated as a manually typed case number and the `C` prefix is added.
+The scanner in use is a **Tera D5100 2D Wireless Barcode Scanner** ([product page](https://tera-digital.com/products/2d-barcode-scanner-d5100)). It connects to the Surface Pro via a USB dongle. The user manual is stored at `docs/TR-UM017-EN-ZQ-Ver.02.1.05-2022.9.16-S02.pdf` in this repository.
+
+The scanner sends raw input in the format `{[C]01052089}`. This module strips the wrapper characters and leading zeros. If the input doesn't start with `{[C]`, it is treated as a manually typed case number and the `C` prefix is added.
 
 If the scanner model ever changes, or the barcode format changes, **only this file needs to be updated.** Everything else in the application works with normalized case numbers.
 
@@ -341,7 +345,7 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | CPU | Intel Core i5-1035G1 @ 1.10 GHz |
 | RAM | 8 GB |
 | Storage | 238 GB |
-| Scanner | Tera barcode scanner (connects via USB dongle) |
+| Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
 | Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |
