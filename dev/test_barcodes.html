@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Barcodes — FoodPantryListGenerator</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .barcode-box {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 16px;
+      text-align: center;
+      border-radius: 4px;
+    }
+    .barcode-label {
+      font-size: 0.8rem;
+      color: #333;
+      margin-top: 8px;
+    }
+    .barcode-desc {
+      font-size: 0.75rem;
+      color: #777;
+      margin-top: 2px;
+    }
+    .expected {
+      font-size: 0.8rem;
+      color: #2a6;
+      margin-top: 4px;
+      font-weight: bold;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 0.9rem;
+    }
+    .note {
+      background: #fffbea;
+      border-left: 4px solid #e6b800;
+      padding: 10px 16px;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Test Barcodes — FoodPantryListGenerator Dev Tool</h1>
+
+<p>
+  These barcodes simulate real customer ID cards for development and testing.
+  Each one encodes the full string that a real card would contain, including
+  the <code>{[C]…}</code> wrapper that the customer ID card barcodes use.
+</p>
+
+<div class="note">
+  <strong>How to use:</strong> Start the application from <code>dev/output/</code>
+  so test CSV files stay out of the main directory:
+  <pre style="margin:8px 0 0 0;font-size:0.85rem">cd dev/output
+python ../../FoodPantryListGenerator.py</pre>
+  Then scan barcodes from this page. The <em>Expected output</em> listed under
+  each barcode is what the application should display after scanning.
+</div>
+
+<h2>Standard case numbers (scanner format)</h2>
+<p>These simulate real customer ID cards. The encoded string includes the <code>{[C]…}</code> wrapper.</p>
+
+<div class="grid">
+  <div class="barcode-box">
+    <svg class="bc" id="bc1"></svg>
+    <div class="barcode-label">Encodes: <code>{[C]01052089}</code></div>
+    <div class="barcode-desc">Standard case — leading zero</div>
+    <div class="expected">Expected: C1052089</div>
+  </div>
+  <div class="barcode-box">
+    <svg class="bc" id="bc2"></svg>
+    <div class="barcode-label">Encodes: <code>{[C]00012345}</code></div>
+    <div class="barcode-desc">Multiple leading zeros</div>
+    <div class="expected">Expected: C12345</div>
+  </div>
+  <div class="barcode-box">
+    <svg class="bc" id="bc3"></svg>
+    <div class="barcode-label">Encodes: <code>{[C]9876543}</code></div>
+    <div class="barcode-desc">No leading zeros</div>
+    <div class="expected">Expected: C9876543</div>
+  </div>
+  <div class="barcode-box">
+    <svg class="bc" id="bc4"></svg>
+    <div class="barcode-label">Encodes: <code>{[C]00000001}</code></div>
+    <div class="barcode-desc">Extreme leading zeros</div>
+    <div class="expected">Expected: C1</div>
+  </div>
+</div>
+
+<h2>Manual entry simulation</h2>
+<p>
+  These simulate what a volunteer types when a card won't scan.
+  They encode plain numbers only — no <code>{[C]…}</code> wrapper.
+  The application should recognise these as manual entry and handle them correctly.
+</p>
+
+<div class="grid">
+  <div class="barcode-box">
+    <svg class="bc" id="bc5"></svg>
+    <div class="barcode-label">Encodes: <code>1052089</code></div>
+    <div class="barcode-desc">Plain number — no prefix</div>
+    <div class="expected">Expected: C1052089</div>
+  </div>
+  <div class="barcode-box">
+    <svg class="bc" id="bc6"></svg>
+    <div class="barcode-label">Encodes: <code>0012345</code></div>
+    <div class="barcode-desc">Plain number — leading zeros</div>
+    <div class="expected">Expected: C12345</div>
+  </div>
+</div>
+
+<script>
+  const barcodes = [
+    { id: "bc1", value: "{[C]01052089}" },
+    { id: "bc2", value: "{[C]00012345}" },
+    { id: "bc3", value: "{[C]9876543}"  },
+    { id: "bc4", value: "{[C]00000001}" },
+    { id: "bc5", value: "1052089"       },
+    { id: "bc6", value: "0012345"       },
+  ];
+
+  barcodes.forEach(({ id, value }) => {
+    JsBarcode("#" + id, value, {
+      format: "CODE128",
+      width: 1.8,
+      height: 70,
+      displayValue: false
+    });
+  });
+</script>
+
+</body>
+</html>
