@@ -62,17 +62,12 @@ FoodPantryListGenerator/
 │                                 a scanning session.
 │
 ├── food_pantry/                 Core package. All business logic lives here.
-│   ├── __init__.py              Package init; contains __version__.
-│   ├── scanner.py               Parses raw barcode input into case numbers.
-│   └── csv_writer.py            Manages the output CSV file.
+│                                 One module per concern — see Module reference
+│                                 below for what each file does.
 │
-├── tests/                       Unit tests and test fixtures.
-│   ├── __init__.py
-│   ├── test_scanner.py          Tests for scanner.py
-│   ├── test_csv_writer.py       Tests for csv_writer.py
-│   └── fixtures/                Synthetic CSV datasets for comparison feature.
-│       ├── sample_scanned_barcodes.csv
-│       └── sample_assistance_report.csv
+├── tests/                       pytest unit and integration tests.
+│   └── fixtures/                Synthetic CSV datasets (no real pantry data).
+│                                 See fixtures/README.md for the scenario key.
 │
 ├── docs/                        Documentation.
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
@@ -93,6 +88,8 @@ FoodPantryListGenerator/
 ├── README.md                    Short overview for anyone landing on the repo.
 └── .gitignore
 ```
+
+> **Runtime files (not in the repo):** The application looks for `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production). If the file is present, flagged case numbers are blocked from being logged. If it is absent, the app behaves exactly as it did before the feature existed. See the [InvNmbrs.csv format](#invnmbrscsv) section for details.
 
 ---
 
@@ -209,6 +206,34 @@ In practice this is the common case, but it is never guaranteed.
 | Oasis only | Absent | Once or multiple | Arrived before scanner was ready, or scan missed |
 
 Synthetic test fixtures covering all of these scenarios are in `tests/fixtures/`. See the [fixture README](../tests/fixtures/README.md) for the scenario-to-case-number mapping used in those files.
+
+### InvNmbrs.csv
+
+An optional file placed in `C:\DoubleCheck\` by the pantry administrator to block flagged case numbers from being logged. It is **not** committed to the repository — it is operational data that lives only on the production machine.
+
+If the file is absent, the application behaves exactly as it did before this feature was added.
+
+**Format:**
+
+| Row | Content | Example |
+|-----|---------|---------|
+| 1 | Administrator contact — `Name,Phone` | `Pantry Admin,555-0100` |
+| 2 | Column header (ignored by the app) | `Case #` |
+| 3+ | One flagged case number per row | `C1052089` |
+
+```
+Pantry Admin,555-0100
+Case #
+C1052089
+C1052090
+```
+
+Key behaviours:
+
+- The file is re-read on every scan, so changes take effect immediately without restarting the application.
+- When a flagged barcode is scanned, a red banner is printed and the scan is **not** written to the output CSV. Scanning continues immediately with no blocking prompt.
+- Once the administrator removes a case number from the file, the next scan of that barcode is logged normally.
+- Row 1 is used as the contact string in the banner. If row 1 is absent or blank, the banner still displays but omits the contact line.
 
 ---
 
@@ -445,4 +470,5 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
 | Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` |
+| Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (optional; managed by the pantry administrator) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |
