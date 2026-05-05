@@ -180,6 +180,14 @@ class TestEnsureInvnmbrsExists:
             lines = fh.readlines()
         assert lines[1].strip() == "Case #"
 
+    def test_skeleton_first_row_has_placeholder(self, tmp_path):
+        """Row 1 of the skeleton contains the name and phone placeholders."""
+        path = str(tmp_path / "InvNmbrs.csv")
+        ensure_invnmbrs_exists(path)
+        with open(path, newline="", encoding="utf-8") as fh:
+            lines = fh.readlines()
+        assert lines[0].strip() == "Name,(xxx) xxx-xxxx"
+
     def test_does_not_overwrite_existing_file(self, tmp_path):
         """If InvNmbrs.csv already exists, it is left untouched."""
         f = tmp_path / "InvNmbrs.csv"

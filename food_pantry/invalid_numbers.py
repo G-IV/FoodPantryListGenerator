@@ -44,10 +44,10 @@ def ensure_invnmbrs_exists(path: str) -> bool:
     """
     Create InvNmbrs.csv with a skeleton structure if it does not exist.
 
-    The skeleton contains the two header rows (an empty contact row and the
+    The skeleton contains the two header rows (a placeholder contact row and the
     'Case #' column header) with no flagged case numbers.  The administrator
-    can open the file in Notepad to fill in their contact details and add
-    case numbers.
+    can open the file in Notepad to replace the placeholder name and phone
+    number with the real contact details, then add case numbers below.
 
     Args:
         path: Absolute or relative path to InvNmbrs.csv.
@@ -58,7 +58,7 @@ def ensure_invnmbrs_exists(path: str) -> bool:
     if os.path.isfile(path):
         return False
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        fh.write(",\r\nCase #\r\n")
+        fh.write("Name,(xxx) xxx-xxxx\r\nCase #\r\n")
     return True
 
 
