@@ -15,4 +15,4 @@ Future modules (not yet implemented) should be added here as the
 application grows. See GitHub Issues for the current roadmap.
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
