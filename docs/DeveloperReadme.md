@@ -81,7 +81,7 @@ FoodPantryListGenerator/
 └── .gitignore
 ```
 
-> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details.
+> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode is scanned, the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) for the format.
 
 ---
 
@@ -89,7 +89,7 @@ FoodPantryListGenerator/
 
 ### `FoodPantryListGenerator.py`
 
-The entry point. It handles the main scanning loop: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()`, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+The entry point. It handles the main scanning loop: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for flagged scans, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
 
 ### `food_pantry/invalid_numbers.py`
 
@@ -112,7 +112,11 @@ If the scanner model ever changes, or the barcode format changes, **only this fi
 
 ### `food_pantry/csv_writer.py`
 
-Manages the output CSV file: building the filename, counting existing rows on startup, formatting timestamps, and appending records. The output format (6 fields per row, 4 empty fields between case number and timestamp) is intentional — those empty fields exist for alignment with the Oasis pantry assistance report merge. **Do not change the row format without confirming the merge process still works.**
+Manages both output CSV files.
+
+For the **scanned barcodes file** (`scanned_barcodes20YYMMDD.csv`): builds the filename, counts existing rows on startup, formats timestamps, and appends records. The row format (6 fields: case number, 4 empty fields, timestamp) is intentional — the empty fields exist for alignment with the Oasis pantry assistance report merge. **Do not change this row format without confirming the merge process still works.**
+
+For the **flagged barcode log** (`flagged_barcodes20YYMMDD.csv`): provides `build_flagged_filename()` and `append_flagged_record()`. The flagged log uses a simple two-column format (`case_number,timestamp`) — **no empty merge fields** — because this file is for the administrator's review only and is never merged into Oasis.
 
 ### `tests/test_scanner.py` and `tests/test_csv_writer.py`
 
@@ -147,6 +151,30 @@ Key behaviours:
 - No deduplication — the same case can appear more than once if the barcode was scanned multiple times.
 - The file may already contain records from a prior session when the app starts; new scans are appended.
 - The four empty fields exist to match the column layout of the Oasis case number data export. **Do not change the row format without confirming with staff that the import process still works.**
+
+### Flagged barcode log — `flagged_barcodes20YYMMDD.csv`
+
+Produced by `FoodPantryListGenerator.exe` during a session whenever a flagged barcode is scanned. The filename uses the same date-stamp convention as the scanned barcodes file.
+
+**No header row.**
+
+| Position | Field | Type | Example |
+|----------|-------|------|---------|
+| 1 | Case number | String — `C` prefix + digits | `C1052089` |
+| 2 | Timestamp | `M/D/YYYY H:MM` (no leading zeros) | `5/5/2026 9:15` |
+
+```
+C1052089,5/5/2026 9:15
+C1052090,5/5/2026 9:47
+```
+
+Key behaviours:
+
+- The file is created on the first flagged scan of the session. If it already exists (from a previous session on the same calendar date, or from the current session), new rows are appended.
+- Unlike the scanned barcodes file, this file has **no empty merge columns** — it is for the administrator's review only and is never imported into Oasis.
+- Each row represents one scan event for a flagged case number, in chronological order.
+
+---
 
 ### Oasis assistance report — `*assistance_report*.csv`
 
@@ -233,7 +261,7 @@ Key behaviours:
 
 - **On first run**, if the file does not exist, the application creates a skeleton automatically and prints a one-time notice prompting the administrator to open the file and fill in their contact details on line 1.
 - The file is re-read on every scan, so changes take effect immediately without restarting the application.
-- When a flagged barcode is scanned, a red banner is printed and the scan is **not** written to the output CSV. Scanning continues immediately with no blocking prompt.
+- When a flagged barcode is scanned, a red banner is printed, the scan is **not** written to the scanned barcodes CSV, and the case number + timestamp **are** written to the [flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv). Scanning continues immediately with no blocking prompt.
 - Once the administrator removes a case number from the file, the next scan of that barcode is logged normally.
 - Row 1 is used as the contact string in the banner. If row 1 is absent or blank, the banner still displays but omits the contact line.
 
@@ -475,6 +503,6 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Storage | 238 GB |
 | Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
-| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` |
+| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (flagged scans only — created only when a flagged barcode is encountered) |
 | Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (auto-created on first run; managed by the pantry administrator) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |

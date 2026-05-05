@@ -134,7 +134,7 @@ When a volunteer scans a barcode that appears in `InvNmbrs.csv`, the screen imme
   Contact administrator: Pantry Admin — (555) 867-5309
 ```
 
-The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the output file.
+The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the scanned output file, but it **is** recorded in a separate flagged barcode log for your review (see [Reviewing the Flagged Barcode Log](#reviewing-the-flagged-barcode-log) below).
 
 Once you have resolved the situation, see [Removing a Flagged Case Number](#removing-a-flagged-case-number) below if the customer should be cleared to receive assistance.
 
@@ -218,6 +218,33 @@ Case #
 C1052089
 C1052090
 ```
+
+---
+
+### Reviewing the Flagged Barcode Log
+
+Every time a flagged barcode is scanned, the List Generator records the case number and the time of the scan in a separate log file:
+
+```
+C:\DoubleCheck\flagged_barcodes20YYMMDD.csv
+```
+
+The date in the filename matches the date of the session (e.g. `flagged_barcodes20260505.csv` for May 5, 2026).
+
+**To review it after pantry:**
+
+1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
+2. Open `flagged_barcodes20YYMMDD.csv` (today's date) in Notepad or Excel.
+3. Each row shows a case number and the time it was scanned:
+
+```
+C1052089,5/5/2026 9:15
+C1052090,5/5/2026 9:47
+```
+
+This file is created only when at least one flagged barcode is scanned. If no flagged barcodes were encountered during the session, the file will not exist.
+
+If a flagged barcode was scanned multiple times in one session, each scan appears as a separate row in chronological order.
 
 ---
 
