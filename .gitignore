@@ -61,6 +61,8 @@ dkms.conf
 
 # CSV files — ignore all by default; real pantry data must never be committed
 *.csv
+# Explicitly ignore the runtime invalid-number list (contains real case numbers + admin contact)
+InvNmbrs.csv
 # Allow synthetic sample fixtures used for testing
 !tests/fixtures/*.csv
 # Explicitly protect the real pantry reports directory (contains PII)

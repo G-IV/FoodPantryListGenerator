@@ -53,6 +53,7 @@ def main() -> None:
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
+    print(f"Source code:  https://github.com/G-IV/FoodPantryListGenerator")
     if created:
         print()
         print("NOTE: InvNmbrs.csv was not found and has been created automatically.")
