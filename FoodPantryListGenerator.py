@@ -24,6 +24,7 @@ import datetime
 import os
 
 from food_pantry.csv_writer import append_record, build_output_filename, count_existing_records
+from food_pantry.invalid_numbers import format_flag_banner, read_admin_contact, read_invalid_numbers
 from food_pantry.scanner import parse_barcode
 
 
@@ -36,6 +37,7 @@ def main() -> None:
     # so the file lands there automatically.
     # See docs/DeveloperReadme.md → Deployment for details.
     filepath = os.path.join(os.getcwd(), filename)
+    invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
 
     record_count = count_existing_records(filepath)
 
@@ -46,8 +48,7 @@ def main() -> None:
     print()
 
     while True:
-        record_count += 1
-        raw = input(f"Record {record_count} — Please scan a barcode: ")
+        raw = input(f"Record {record_count + 1} — Please scan a barcode: ")
 
         case_number = parse_barcode(raw)
 
@@ -55,6 +56,14 @@ def main() -> None:
             # Blank input — volunteer pressed Enter to exit.
             break
 
+        flagged = read_invalid_numbers(invnmbrs_path)
+        if case_number in flagged:
+            contact = read_admin_contact(invnmbrs_path)
+            for line in format_flag_banner(case_number, contact):
+                print(line)
+            continue
+
+        record_count += 1
         now = datetime.datetime.now()
         append_record(filepath, case_number, now)
 
