@@ -108,3 +108,117 @@ This station, along with Station 1 in the foyer, will not close down until **12:
 The scanner used at this station is the **Tera D5100 2D Wireless Barcode Scanner**. If you need the user manual (for example, to troubleshoot pairing the dongle or adjust scanner settings), it is available on the product page:
 
 https://tera-digital.com/products/2d-barcode-scanner-d5100
+
+---
+
+## Oasis Administrator Role
+
+This section is for the **Oasis Administrator** — the person responsible for maintaining the flagged-barcode list (`InvNmbrs.csv`) and for responding when the List Generator station contacts them about a blocked scan.
+
+Volunteers do not need to read this section. Administrators do not need to read the sections above.
+
+---
+
+### Your Role on Pantry Day
+
+<!-- TODO (Tina): Add a brief description of the Oasis Admin's broader pantry-day responsibilities here — e.g. staffing the Oasis stations, reviewing records, handling flagged cases, etc. This section should give a new admin enough context to understand where the InvNmbrs.csv task fits into the overall pantry workflow. -->
+
+The task specific to the List Generator is: **maintaining `InvNmbrs.csv`**, a file on the Surface Pro that controls which case numbers are blocked from being logged at the scan-in station. See the sections below for how to manage it.
+
+---
+
+### What the Volunteer Sees When a Barcode Is Flagged
+
+When a volunteer scans a barcode that appears in `InvNmbrs.csv`, the screen immediately displays a red banner like this:
+
+```
+  FLAGGED — DO NOT ISSUE: C1052089
+  Contact administrator: Pantry Admin — 555-0100
+```
+
+The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the output file.
+
+Once you have resolved the situation, see [Removing a Flagged Case Number](#removing-a-flagged-case-number) below if the customer should be cleared to receive assistance.
+
+---
+
+### What Is InvNmbrs.csv?
+
+`InvNmbrs.csv` is a plain text file stored on the Surface Pro at:
+
+```
+C:\DoubleCheck\InvNmbrs.csv
+```
+
+It is a simple list of case numbers that should not receive assistance. The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
+
+**If the file does not exist**, the List Generator behaves as it always has — no barcodes are flagged and all scans are logged normally. You only need to create the file if you have case numbers to flag.
+
+---
+
+### Creating the File from Scratch
+
+If `InvNmbrs.csv` does not yet exist in `C:\DoubleCheck\`, create it using Notepad:
+
+1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
+2. Right-click in the folder, choose **New > Text Document**.
+3. Name the file `InvNmbrs.csv` — be sure to include `.csv` and remove the default `.txt` extension.
+   - If you do not see file extensions in File Explorer, go to **View > Show > File name extensions** and check the box.
+4. Right-click the file and choose **Open with > Notepad**.
+5. Enter your contact information on the first line, then the column header on the second line:
+
+```
+Pantry Admin,555-0100
+Case #
+```
+
+Replace `Pantry Admin` with your name and `555-0100` with your phone number. This is the contact information the volunteer will see in the red banner.
+
+6. Save the file (`Ctrl+S`).
+
+The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
+
+---
+
+### Adding a Flagged Case Number
+
+1. Open `C:\DoubleCheck\InvNmbrs.csv` in Notepad.
+2. Add one case number per line after the `Case #` header row.  
+   Use the `C`-prefix format (e.g. `C1052089`) — this is the same format shown on the screen when the volunteer scans a card.
+3. Save the file (`Ctrl+S`).
+
+The change takes effect on the very next scan at the List Generator station — no restart needed.
+
+**Example file with two flagged case numbers:**
+
+```
+Pantry Admin,555-0100
+Case #
+C1052089
+C1052090
+```
+
+---
+
+### Removing a Flagged Case Number
+
+1. Open `C:\DoubleCheck\InvNmbrs.csv` in Notepad.
+2. Delete the line containing the case number you want to clear.
+3. Save the file (`Ctrl+S`).
+
+The next time the volunteer scans that barcode, it will be logged normally.
+
+---
+
+### File Format Reference
+
+| Row | Content | Example |
+|-----|---------|---------|
+| 1 | Your name and phone number, separated by a comma | `Pantry Admin,555-0100` |
+| 2 | Column header — type this exactly | `Case #` |
+| 3 and below | One flagged case number per line | `C1052089` |
+
+- Case numbers must include the `C` prefix.
+- One case number per line — do not put multiple numbers on the same line.
+- Blank lines between case numbers are fine and will be ignored.
+- The file is re-read on every scan, so edits take effect immediately.
