@@ -144,3 +144,49 @@ def append_record(
         # Five commas produce the four empty fields required for the
         # downstream Oasis report merge. See module docstring for details.
         f.write(f"{case_number},,,,, {ts}\n")
+
+
+def build_flagged_filename(date: datetime.date) -> str:
+    """
+    Return the dated CSV filename for the flagged-barcode log.
+
+    The filename mirrors the scanned_barcodes naming convention so both
+    files for a given day sort together in the C:\\DoubleCheck\\ folder.
+
+    Args:
+        date: The date to embed in the filename.
+
+    Returns:
+        Filename string, e.g. "flagged_barcodes20260504.csv"
+
+    Examples:
+        >>> import datetime
+        >>> build_flagged_filename(datetime.date(2026, 5, 4))
+        'flagged_barcodes20260504.csv'
+    """
+    return f"flagged_barcodes20{date.strftime('%y%m%d')}.csv"
+
+
+def append_flagged_record(
+    filepath: str,
+    case_number: str,
+    timestamp: datetime.datetime,
+) -> None:
+    """
+    Append a single flagged-barcode record to the flagged log CSV.
+
+    Opens the file in append mode so existing records are never overwritten.
+    Creates the file if it does not exist yet.
+
+    The flagged log uses the same two-column layout as the scanned log
+    (Case #, Timestamp) but without the empty Oasis merge columns, since
+    this file is for Tina's review only and is not merged into Oasis.
+
+    Args:
+        filepath:    Absolute or relative path to the flagged log CSV.
+        case_number: Normalized case number, e.g. "C1052089".
+        timestamp:   The datetime at which the barcode was scanned.
+    """
+    ts = format_timestamp(timestamp)
+    with open(filepath, "a", encoding="utf-8") as f:
+        f.write(f"{case_number},{ts}\n")

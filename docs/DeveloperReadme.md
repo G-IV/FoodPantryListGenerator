@@ -38,18 +38,11 @@ The application is intentionally simple — no network connection, no database, 
 
 The original application (v1.0.0) was written in C and compiled with Visual Studio. It was rewritten in Python for v2.0.0 for the following reasons:
 
-- **Maintainability.** C requires careful manual memory management and string handling. The original code contained bugs (see below) that are easy to make in C but trivial to avoid in Python.
+- **Maintainability.** C is more susceptible to certain categories of bugs — memory management, string handling, format specifiers — that are simply easier to avoid in Python.
 - **Testability.** The original C code mixed I/O and logic in a single `main()` function with no separation, making automated testing impractical. Python's module system makes it straightforward to test logic independently.
 - **Extensibility.** Upcoming features (reporting, import/export, barcode validation) are significantly more practical to implement in Python than in C.
 - **Cross-platform development.** Developers can work on macOS, Windows, or Linux without needing Visual Studio or a Windows-specific toolchain.
 - **No runtime dependency on the Surface Pro.** PyInstaller bundles the Python interpreter into a single `.exe`, so Python does not need to be installed on the Surface Pro.
-
-**Bugs fixed in the rewrite:**
-
-| Bug | Original C behavior | Fixed behavior |
-|-----|---------------------|----------------|
-| Manual case number entry | The C parser always assumed scanner format (`{[C]NNNNN}`), so a manually typed number like `1052089` would be parsed incorrectly | `scanner.py` detects the input format and parses accordingly |
-| Timestamp format | `"%d/%d/%d% d:%d"` — the `% d` format specifier added a stray space before the hour | `format_timestamp()` in `csv_writer.py` builds the string manually with no stray space |
 
 ---
 
@@ -62,23 +55,17 @@ FoodPantryListGenerator/
 │                                 a scanning session.
 │
 ├── food_pantry/                 Core package. All business logic lives here.
-│   ├── __init__.py              Package init; contains __version__.
-│   ├── scanner.py               Parses raw barcode input into case numbers.
-│   └── csv_writer.py            Manages the output CSV file.
+│                                 One module per concern — see Module reference
+│                                 below for what each file does.
 │
-├── tests/                       Unit tests and test fixtures.
-│   ├── __init__.py
-│   ├── test_scanner.py          Tests for scanner.py
-│   ├── test_csv_writer.py       Tests for csv_writer.py
-│   └── fixtures/                Synthetic CSV datasets for comparison feature.
-│       ├── sample_scanned_barcodes.csv
-│       └── sample_assistance_report.csv
+├── tests/                       pytest unit and integration tests.
+│   └── fixtures/                Synthetic CSV datasets (no real pantry data).
+│                                 See fixtures/README.md for the scenario key.
 │
 ├── docs/                        Documentation.
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
 │   ├── DeveloperReadme.md       This file.
-│   └── TR-UM017-EN-ZQ-Ver.02.1.05-2022.9.16-S02.pdf
-│                                User manual for the Tera D5100 scanner.
+│   └── Scanner User Manual.pdf  User manual for the Tera D5100 scanner.
 │
 ├── .github/
 │   └── workflows/
@@ -94,19 +81,30 @@ FoodPantryListGenerator/
 └── .gitignore
 ```
 
+> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode is scanned, the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) for the format.
+
 ---
 
 ## Module reference
 
 ### `FoodPantryListGenerator.py`
 
-The entry point. It handles the main scanning loop: prompts for input, calls `parse_barcode()`, calls `append_record()`, and exits on blank input. It contains no business logic — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+The entry point. It handles the main scanning loop: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for flagged scans, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+
+### `food_pantry/invalid_numbers.py`
+
+Manages `InvNmbrs.csv` — the flagged case number list maintained by the Oasis Administrator. Provides four public functions:
+
+- `ensure_invnmbrs_exists(path)` — creates a skeleton file (contact row + `Case #` header, no case numbers) if the file is absent. Called at startup. Returns `True` if it created the file, `False` if it already existed.
+- `validate_and_clean_invnmbrs(path, error_log_path)` — scans rows 3+ on startup; removes any row that is not a valid `C`+digits case number, rewrites the file, and appends removed rows to `InvNmbrs_errors.log`.
+- `read_invalid_numbers(path)` — returns the current set of flagged case numbers. Called on every scan so mid-session changes take effect immediately.
+- `read_admin_contact(path)` — returns the formatted contact string from row 1 for display in the flag banner.
 
 ### `food_pantry/scanner.py`
 
 Responsible for one thing: turning a raw string (from the scanner or typed manually) into a normalized case number like `C1052089`.
 
-The scanner in use is a **Tera D5100 2D Wireless Barcode Scanner** ([product page](https://tera-digital.com/products/2d-barcode-scanner-d5100)). It connects to the Surface Pro via a USB dongle. The user manual is stored at `docs/TR-UM017-EN-ZQ-Ver.02.1.05-2022.9.16-S02.pdf` in this repository.
+The scanner in use is a **Tera D5100 2D Wireless Barcode Scanner** ([product page](https://tera-digital.com/products/2d-barcode-scanner-d5100)). It connects to the Surface Pro via a USB dongle. The user manual is stored at `docs/Scanner User Manual.pdf` in this repository.
 
 The scanner sends raw input in the format `{[C]01052089}`. This module strips the wrapper characters and leading zeros. If the input doesn't start with `{[C]`, it is treated as a manually typed case number and the `C` prefix is added.
 
@@ -114,7 +112,11 @@ If the scanner model ever changes, or the barcode format changes, **only this fi
 
 ### `food_pantry/csv_writer.py`
 
-Manages the output CSV file: building the filename, counting existing rows on startup, formatting timestamps, and appending records. The output format (6 fields per row, 4 empty fields between case number and timestamp) is intentional — those empty fields exist for alignment with the Oasis pantry assistance report merge. **Do not change the row format without confirming the merge process still works.**
+Manages both output CSV files.
+
+For the **scanned barcodes file** (`scanned_barcodes20YYMMDD.csv`): builds the filename, counts existing rows on startup, formats timestamps, and appends records. The row format (6 fields: case number, 4 empty fields, timestamp) is intentional — the empty fields exist for alignment with the Oasis pantry assistance report merge. **Do not change this row format without confirming the merge process still works.**
+
+For the **flagged barcode log** (`flagged_barcodes20YYMMDD.csv`): provides `build_flagged_filename()` and `append_flagged_record()`. The flagged log uses a simple two-column format (`case_number,timestamp`) — **no empty merge fields** — because this file is for the administrator's review only and is never merged into Oasis.
 
 ### `tests/test_scanner.py` and `tests/test_csv_writer.py`
 
@@ -135,7 +137,7 @@ Produced by `FoodPantryListGenerator.exe` during a session. Each row represents 
 | Position | Field | Type | Example |
 |----------|-------|------|---------|
 | 1 | Case number | String — `C` prefix + digits | `C1052089` |
-| 2–5 | *(empty)* | Reserved for Oasis mail-merge fields | |
+| 2–5 | *(empty)* | Empty columns to match the Oasis case number export format | |
 | 6 | Timestamp | `M/D/YYYY H:MM` (no leading zeros) | `4/25/2026 8:00` |
 
 ```
@@ -148,7 +150,31 @@ Key behaviours:
 - Rows are in chronological order (order of scanning).
 - No deduplication — the same case can appear more than once if the barcode was scanned multiple times.
 - The file may already contain records from a prior session when the app starts; new scans are appended.
-- The four empty fields exist for alignment with an Oasis mail-merge. **Do not change the row format without confirming with staff that the merge process still works.**
+- The four empty fields exist to match the column layout of the Oasis case number data export. **Do not change the row format without confirming with staff that the import process still works.**
+
+### Flagged barcode log — `flagged_barcodes20YYMMDD.csv`
+
+Produced by `FoodPantryListGenerator.exe` during a session whenever a flagged barcode is scanned. The filename uses the same date-stamp convention as the scanned barcodes file.
+
+**No header row.**
+
+| Position | Field | Type | Example |
+|----------|-------|------|---------|
+| 1 | Case number | String — `C` prefix + digits | `C1052089` |
+| 2 | Timestamp | `M/D/YYYY H:MM` (no leading zeros) | `5/5/2026 9:15` |
+
+```
+C1052089,5/5/2026 9:15
+C1052090,5/5/2026 9:47
+```
+
+Key behaviours:
+
+- The file is created on the first flagged scan of the session. If it already exists (from a previous session on the same calendar date, or from the current session), new rows are appended.
+- Unlike the scanned barcodes file, this file has **no empty merge columns** — it is for the administrator's review only and is never imported into Oasis.
+- Each row represents one scan event for a flagged case number, in chronological order.
+
+---
 
 ### Oasis assistance report — `*assistance_report*.csv`
 
@@ -201,14 +227,47 @@ In practice this is the common case, but it is never guaranteed.
 
 | Scenario | Scanner | Oasis | Notes |
 |----------|---------|-------|-------|
-| Clean match | Once | Once | Most common |
-| Entered multiple times in Oasis | Once | Multiple | Possible data-entry error |
-| Scanned multiple times | Multiple | Once | Accidental re-scan |
-| Multiple in both | Multiple | Multiple | Re-scanned and re-entered |
-| Scanned only | Once or multiple | Absent | Volunteer forgot to log in Oasis, or scanner issue |
-| Oasis only | Absent | Once or multiple | Arrived before scanner was ready, or scan missed |
+| Clean match | Once | Once | Ideal state — customer went through both stations exactly once |
+| Entered multiple times in Oasis | Once | Multiple | Data-entry error, or customer passed through the Oasis station more than once |
+| Scanned multiple times | Multiple | Once | Accidental re-scan, or customer passed through this station more than once |
+| Multiple in both | Multiple | Multiple | Any combination of the above — occurred at both stations |
+| Scanner only | Once or multiple | Absent | Customer bypassed the Oasis station; customers are expected to go through Oasis first |
+| Oasis only | Absent | Once or multiple | Customer was not scanned at this station; unexpected — customers should be recorded at both |
 
 Synthetic test fixtures covering all of these scenarios are in `tests/fixtures/`. See the [fixture README](../tests/fixtures/README.md) for the scenario-to-case-number mapping used in those files.
+
+### InvNmbrs.csv
+
+An optional file placed in `C:\DoubleCheck\` by the pantry administrator to block flagged case numbers from being logged. It is **not** committed to the repository — it is operational data that lives only on the production machine.
+
+**On first run the application creates the file automatically** if it does not exist, writing a skeleton with just the two header rows and no flagged case numbers. The administrator can then open it in Notepad to add their contact details and any case numbers to flag.
+
+**Format:**
+
+| Row | Content | Example |
+|-----|---------|---------|
+| 1 | Administrator contact — `Name,Phone` | `Pantry Admin,(555) 867-5309` |
+| 2 | Column header (ignored by the app) | `Case #` |
+| 3+ | One flagged case number per row | `C1052089` |
+
+```
+Pantry Admin,(555) 867-5309
+Case #
+C1052089
+C1052090
+```
+
+Key behaviours:
+
+- **On first run**, if the file does not exist, the application creates a skeleton automatically and prints a one-time notice prompting the administrator to open the file and fill in their contact details on line 1.
+- The file is re-read on every scan, so changes take effect immediately without restarting the application.
+- When a flagged barcode is scanned, a red banner is printed, the scan is **not** written to the scanned barcodes CSV, and the case number + timestamp **are** written to the [flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv). Scanning continues immediately with no blocking prompt.
+- Once the administrator removes a case number from the file, the next scan of that barcode is logged normally.
+- Row 1 is used as the contact string in the banner. If row 1 is absent or blank, the banner still displays but omits the contact line.
+
+**Format validation:**
+
+At startup the application checks every case number row (row 3+). A valid row is a `C` followed by digits — e.g. `C1052089`. Any row that does not match this pattern is removed from the file and written to `InvNmbrs_errors.log` (in the same folder) so the data is not lost. Blank rows are dropped silently without logging. The first two header rows are never touched.
 
 ---
 
@@ -231,7 +290,7 @@ If you see anything other than `3.12.x`, install 3.12 before continuing (see pla
 A virtual environment is an isolated Python installation scoped to this project. You should always use one. Here's why it matters:
 
 - **Python version mismatches.** Your system may have Python 3.9 or 3.11 installed globally. Running `python` or `pip` without a virtual environment uses whatever version is on your system PATH, which may not be 3.12. A virtual environment lets you pin the exact version this project requires.
-- **Dependency isolation.** `pip install` without a virtual environment installs packages globally, which can conflict with other projects on your machine. A virtual environment keeps this project's dependencies (`pytest`, `pyinstaller`) separate.
+Dependency isolation. pip install without a virtual environment installs packages globally, which can conflict with other projects on your machine. A virtual environment keeps this project's dependencies separate.
 - **Reproducibility.** Another developer cloning the repo and following these steps will end up with the same environment you have.
 
 The `.venv/` directory is in `.gitignore` — virtual environments are machine-specific and should never be committed.
@@ -444,5 +503,6 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Storage | 238 GB |
 | Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
-| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` |
+| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (flagged scans only — created only when a flagged barcode is encountered) |
+| Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (auto-created on first run; managed by the pantry administrator) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |

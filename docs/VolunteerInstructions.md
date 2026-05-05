@@ -9,8 +9,6 @@
 
 The process of entering data is most accurate when there is a second step, called **verification**, that is performed to check the accuracy of the first entry of data.
 
-In addition to having two different stations that log pantry assistance, St. Andrew's now has a third station that logs a list of all the case numbers that were served that day. This station is in the **Agape Room**, which will help us log anyone who may have slipped past the two stations in the foyer.
-
 The volunteer will use a scanner to read the barcode ID card/image of everyone entering the Sunrise Room to shop. If the person is a proxy for someone else (they will be carrying a "proxy" card), please scan the barcode ID card/image of the **household for which they are picking up**.
 
 The program used is named **FoodPantryListGenerator**. It is not an Oasis program, so the volunteer does not have to be a trained Oasis volunteer who has passed the Confidentiality Quiz.
@@ -108,3 +106,167 @@ This station, along with Station 1 in the foyer, will not close down until **12:
 The scanner used at this station is the **Tera D5100 2D Wireless Barcode Scanner**. If you need the user manual (for example, to troubleshoot pairing the dongle or adjust scanner settings), it is available on the product page:
 
 https://tera-digital.com/products/2d-barcode-scanner-d5100
+
+---
+
+## Oasis Administrator Role
+
+This section is for the **Oasis Administrator** — the person responsible for maintaining the flagged-barcode list (`InvNmbrs.csv`) and for responding when the List Generator station contacts them about a blocked scan.
+
+Volunteers do not need to read this section. Administrators do not need to read the sections above.
+
+---
+
+### Your Role on Pantry Day
+
+<!-- TODO (Tina): Add a brief description of the Oasis Admin's broader pantry-day responsibilities here — e.g. staffing the Oasis stations, reviewing records, handling flagged cases, etc. This section should give a new admin enough context to understand where the InvNmbrs.csv task fits into the overall pantry workflow. -->
+
+The task specific to the List Generator is: **maintaining `InvNmbrs.csv`**, a file on the Surface Pro that controls which case numbers are blocked from being logged at the scan-in station. See the sections below for how to manage it.
+
+---
+
+### What the Volunteer Sees When a Barcode Is Flagged
+
+When a volunteer scans a barcode that appears in `InvNmbrs.csv`, the screen immediately displays a red banner like this:
+
+```
+  FLAGGED — DO NOT ISSUE: C1052089
+  Contact administrator: Pantry Admin — (555) 867-5309
+```
+
+The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the scanned output file, but it **is** recorded in a separate flagged barcode log for your review (see [Reviewing the Flagged Barcode Log](#reviewing-the-flagged-barcode-log) below).
+
+Once you have resolved the situation, see [Removing a Flagged Case Number](#removing-a-flagged-case-number) below if the customer should be cleared to receive assistance.
+
+---
+
+### What Is InvNmbrs.csv?
+
+`InvNmbrs.csv` is a plain text file stored on the Surface Pro at:
+
+```
+C:\DoubleCheck\InvNmbrs.csv
+```
+
+**The List Generator creates this file automatically** the first time it runs, if it does not already exist. The auto-generated file contains just the two header rows — no case numbers are flagged yet. The Oasis Administrator should open the file in Notepad and update line 1 with their name and phone number before the first pantry day. The application will display a reminder notice on screen when it creates the file.
+
+The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
+
+---
+
+### Setting Up the File for the First Time
+
+When the List Generator runs for the first time, it creates `InvNmbrs.csv` automatically with a blank contact line and no flagged case numbers. You will see a notice on screen prompting you to update it.
+
+Open the file in Notepad and update line 1 with the Oasis Administrator's name and phone number:
+
+1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
+2. Right-click `InvNmbrs.csv` and choose **Open with > Notepad**.
+3. Replace the first line with your name and phone number:
+
+```
+Pantry Admin,(555) 867-5309
+Case #
+```
+
+Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number. This is the contact information the volunteer will see in the red banner.
+
+4. Save the file (`Ctrl+S`).
+
+The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
+
+> **If the file was accidentally deleted**, the List Generator will recreate the blank skeleton the next time it runs. Follow the steps above again to restore your contact details.
+
+---
+
+### Creating the File Manually (if needed)
+
+In most cases the List Generator creates `InvNmbrs.csv` automatically. If for any reason you need to create it by hand:
+
+1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
+2. Right-click in the folder, choose **New > Text Document**.
+3. Name the file `InvNmbrs.csv` — be sure to include `.csv` and remove the default `.txt` extension.
+   - If you do not see file extensions in File Explorer, go to **View > Show > File name extensions** and check the box.
+4. Right-click the file and choose **Open with > Notepad**.
+5. Enter your contact information on the first line, then the column header on the second line:
+
+```
+Pantry Admin,(555) 867-5309
+Case #
+```
+
+Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number.
+
+6. Save the file (`Ctrl+S`).
+
+---
+
+### Adding a Flagged Case Number
+
+1. Open `C:\DoubleCheck\InvNmbrs.csv` in Notepad.
+2. Add one case number per line after the `Case #` header row.  
+   Use the `C`-prefix format (e.g. `C1052089`) — this is the same format shown on the screen when the volunteer scans a card.
+3. Save the file (`Ctrl+S`).
+
+The change takes effect on the very next scan at the List Generator station — no restart needed.
+
+**Example file with two flagged case numbers:**
+
+```
+Pantry Admin,(555) 867-5309
+Case #
+C1052089
+C1052090
+```
+
+---
+
+### Reviewing the Flagged Barcode Log
+
+Every time a flagged barcode is scanned, the List Generator records the case number and the time of the scan in a separate log file:
+
+```
+C:\DoubleCheck\flagged_barcodes20YYMMDD.csv
+```
+
+The date in the filename matches the date of the session (e.g. `flagged_barcodes20260505.csv` for May 5, 2026).
+
+**To review it after pantry:**
+
+1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
+2. Open `flagged_barcodes20YYMMDD.csv` (today's date) in Notepad or Excel.
+3. Each row shows a case number and the time it was scanned:
+
+```
+C1052089,5/5/2026 9:15
+C1052090,5/5/2026 9:47
+```
+
+This file is created only when at least one flagged barcode is scanned. If no flagged barcodes were encountered during the session, the file will not exist.
+
+If a flagged barcode was scanned multiple times in one session, each scan appears as a separate row in chronological order.
+
+---
+
+### Removing a Flagged Case Number
+
+1. Open `C:\DoubleCheck\InvNmbrs.csv` in Notepad.
+2. Delete the line containing the case number you want to clear.
+3. Save the file (`Ctrl+S`).
+
+The next time the volunteer scans that barcode, it will be logged normally.
+
+---
+
+### File Format Reference
+
+| Row | Content | Example |
+|-----|---------|---------|
+| 1 | Your name and phone number, separated by a comma | `Pantry Admin,(555) 867-5309` |
+| 2 | Column header — type this exactly | `Case #` |
+| 3 and below | One flagged case number per line | `C1052089` |
+
+- Case numbers must include the `C` prefix.
+- One case number per line — do not put multiple numbers on the same line.
+- Blank lines between case numbers are fine and will be ignored.
+- The file is re-read on every scan, so edits take effect immediately.

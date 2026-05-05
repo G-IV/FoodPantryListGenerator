@@ -15,7 +15,9 @@ import tempfile
 
 import pytest
 from food_pantry.csv_writer import (
+    append_flagged_record,
     append_record,
+    build_flagged_filename,
     build_output_filename,
     count_existing_records,
     format_timestamp,
@@ -170,3 +172,60 @@ class TestAppendRecord:
             with open(filepath, "r", encoding="utf-8") as f:
                 line = f.readline()
             assert line.startswith("C5551234,")
+
+
+# ---------------------------------------------------------------------------
+# build_flagged_filename — produces the dated flagged-barcode log filename
+# ---------------------------------------------------------------------------
+
+class TestBuildFlaggedFilename:
+    def test_standard_date(self):
+        """A typical pantry date produces the correct filename."""
+        assert build_flagged_filename(datetime.date(2026, 5, 4)) == "flagged_barcodes20260504.csv"
+
+    def test_single_digit_month_and_day_are_zero_padded(self):
+        """Month and day are zero-padded in the filename."""
+        assert build_flagged_filename(datetime.date(2026, 1, 5)) == "flagged_barcodes20260105.csv"
+
+    def test_filename_ends_with_csv(self):
+        """Output is always a .csv file."""
+        assert build_flagged_filename(datetime.date(2026, 5, 4)).endswith(".csv")
+
+    def test_filename_contains_correct_prefix(self):
+        """The filename prefix distinguishes it from the scanned log."""
+        assert build_flagged_filename(datetime.date(2026, 5, 4)).startswith("flagged_barcodes20")
+
+
+# ---------------------------------------------------------------------------
+# append_flagged_record — writes rows to the flagged-barcode log
+# ---------------------------------------------------------------------------
+
+class TestAppendFlaggedRecord:
+    def test_creates_file_if_not_exists(self):
+        """append_flagged_record creates the file when it does not already exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filepath = os.path.join(tmpdir, "flagged.csv")
+            assert not os.path.exists(filepath)
+            append_flagged_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
+            assert os.path.exists(filepath)
+
+    def test_row_format_is_case_number_and_timestamp(self):
+        """Each row is: case_number,timestamp — no empty merge columns."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filepath = os.path.join(tmpdir, "flagged.csv")
+            append_flagged_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
+            with open(filepath, "r", encoding="utf-8") as f:
+                line = f.readline()
+            assert line == "C1200001,5/4/2026 9:15\n"
+
+    def test_appends_without_overwriting(self):
+        """Multiple flagged scans accumulate in the same file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filepath = os.path.join(tmpdir, "flagged.csv")
+            append_flagged_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
+            append_flagged_record(filepath, "C1300001", datetime.datetime(2026, 5, 4, 9, 16))
+            with open(filepath, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            assert len(lines) == 2
+            assert lines[0].startswith("C1200001,")
+            assert lines[1].startswith("C1300001,")
