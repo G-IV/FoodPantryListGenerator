@@ -27,7 +27,7 @@ from barcode.writer import SVGWriter
 # ---------------------------------------------------------------------------
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURE_CSV = os.path.join(REPO_ROOT, "tests", "fixtures", "sample_scanned_barcodes.csv")
-OUTPUT_HTML = os.path.join(REPO_ROOT, "tests", "fixtures", "test_barcodes.html")
+OUTPUT_HTML = os.path.join(REPO_ROOT, "tests", "manual_tests", "test_barcodes.html")
 
 
 def barcode_svg(value: str) -> str:
