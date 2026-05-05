@@ -29,12 +29,94 @@ For local development, place it in the project root (same directory as
 FoodPantryListGenerator.py).
 """
 
+import datetime
 import os
+import re
 from typing import Optional
 
 
 _RED = "\033[1;97;41m"
 _RESET = "\033[0m"
+_CASE_NUMBER_RE = re.compile(r"^C\d+$")
+
+
+def ensure_invnmbrs_exists(path: str) -> bool:
+    """
+    Create InvNmbrs.csv with a skeleton structure if it does not exist.
+
+    The skeleton contains the two header rows (an empty contact row and the
+    'Case #' column header) with no flagged case numbers.  The administrator
+    can open the file in Notepad to fill in their contact details and add
+    case numbers.
+
+    Args:
+        path: Absolute or relative path to InvNmbrs.csv.
+
+    Returns:
+        True if the file was created, False if it already existed.
+    """
+    if os.path.isfile(path):
+        return False
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        fh.write(",\r\nCase #\r\n")
+    return True
+
+
+def validate_and_clean_invnmbrs(path: str, error_log_path: str) -> list:
+    """
+    Validate case number rows in InvNmbrs.csv and remove any that are malformed.
+
+    Rows 1 and 2 (contact info and column header) are always kept as-is.
+    Rows 3+ must be a case number in the form C followed by digits (e.g. C1052089).
+
+    - Blank rows are silently removed without logging.
+    - Non-blank rows that do not match the case number format are removed from
+      the file and appended to the error log so the data is not lost.
+
+    If no malformed rows are found the file is not rewritten.
+
+    Args:
+        path: Absolute path to InvNmbrs.csv.
+        error_log_path: Absolute path to the error log file to append bad rows to.
+
+    Returns:
+        A list of (row_number, raw_value) tuples for each bad row that was
+        removed and logged.  Returns an empty list if the file is absent or
+        all rows are valid.
+    """
+    if not os.path.isfile(path):
+        return []
+
+    with open(path, "r", newline="", encoding="utf-8") as fh:
+        lines = fh.readlines()
+
+    header_rows = lines[:2]
+    case_rows = lines[2:]
+
+    good_rows: list = []
+    bad_rows: list = []  # list of (1-based row number, stripped value)
+
+    for i, line in enumerate(case_rows, start=3):
+        stripped = line.strip().rstrip(",").strip()
+        if not stripped:
+            continue  # blank row — drop silently
+        if _CASE_NUMBER_RE.match(stripped):
+            good_rows.append(line)
+        else:
+            bad_rows.append((i, stripped))
+
+    if bad_rows:
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            fh.writelines(header_rows)
+            fh.writelines(good_rows)
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(error_log_path, "a", encoding="utf-8") as fh:
+            fh.write(f"\n[{timestamp}] Removed malformed rows from InvNmbrs.csv:\n")
+            for row_num, value in bad_rows:
+                fh.write(f"  Row {row_num}: {value!r}\n")
+
+    return bad_rows
 
 
 def read_invalid_numbers(path: str) -> set:

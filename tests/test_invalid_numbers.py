@@ -8,11 +8,14 @@ If you change InvNmbrs.csv's format or the banner rendering, update these
 tests first so the change is intentional and documented.
 """
 
+import os
 import pytest
 from food_pantry.invalid_numbers import (
+    ensure_invnmbrs_exists,
     format_flag_banner,
     read_admin_contact,
     read_invalid_numbers,
+    validate_and_clean_invnmbrs,
 )
 
 
@@ -147,3 +150,117 @@ class TestFormatFlagBanner:
         """When contact is None, no contact line appears in the output."""
         lines = format_flag_banner("C1052089", None)
         assert not any("Contact" in line for line in lines)
+
+
+# ---------------------------------------------------------------------------
+# ensure_invnmbrs_exists — creates a skeleton file if absent
+# ---------------------------------------------------------------------------
+
+class TestEnsureInvnmbrsExists:
+    def test_creates_file_when_absent(self, tmp_path):
+        """If InvNmbrs.csv does not exist, a skeleton file is created."""
+        path = str(tmp_path / "InvNmbrs.csv")
+        result = ensure_invnmbrs_exists(path)
+        assert result is True
+        assert os.path.isfile(path)
+
+    def test_skeleton_has_two_rows(self, tmp_path):
+        """The generated skeleton contains exactly two non-empty rows."""
+        path = str(tmp_path / "InvNmbrs.csv")
+        ensure_invnmbrs_exists(path)
+        with open(path, newline="", encoding="utf-8") as fh:
+            lines = [ln.strip() for ln in fh.readlines() if ln.strip()]
+        assert len(lines) == 2
+
+    def test_skeleton_second_row_is_case_header(self, tmp_path):
+        """Row 2 of the skeleton is 'Case #'."""
+        path = str(tmp_path / "InvNmbrs.csv")
+        ensure_invnmbrs_exists(path)
+        with open(path, newline="", encoding="utf-8") as fh:
+            lines = fh.readlines()
+        assert lines[1].strip() == "Case #"
+
+    def test_does_not_overwrite_existing_file(self, tmp_path):
+        """If InvNmbrs.csv already exists, it is left untouched."""
+        f = tmp_path / "InvNmbrs.csv"
+        original = "Jane Smith,(555) 867-5309\nCase #\nC1052089\n"
+        f.write_text(original)
+        result = ensure_invnmbrs_exists(str(f))
+        assert result is False
+        assert f.read_text() == original
+
+
+# ---------------------------------------------------------------------------
+# validate_and_clean_invnmbrs — removes malformed rows and logs them
+# ---------------------------------------------------------------------------
+
+class TestValidateAndClean:
+    def test_absent_file_returns_empty_list(self, tmp_path):
+        """No error if InvNmbrs.csv doesn't exist — returns empty list."""
+        result = validate_and_clean_invnmbrs(
+            str(tmp_path / "InvNmbrs.csv"),
+            str(tmp_path / "InvNmbrs_errors.log"),
+        )
+        assert result == []
+
+    def test_clean_file_returns_empty_list(self, tmp_path):
+        """A file with only valid case numbers returns an empty list."""
+        f = tmp_path / "InvNmbrs.csv"
+        f.write_text("Jane Smith,(555) 867-5309\nCase #\nC1052089\nC1052090\n")
+        result = validate_and_clean_invnmbrs(str(f), str(tmp_path / "InvNmbrs_errors.log"))
+        assert result == []
+
+    def test_clean_file_is_not_rewritten(self, tmp_path):
+        """A valid file is not modified."""
+        f = tmp_path / "InvNmbrs.csv"
+        original = "Jane Smith,(555) 867-5309\nCase #\nC1052089\n"
+        f.write_text(original)
+        validate_and_clean_invnmbrs(str(f), str(tmp_path / "InvNmbrs_errors.log"))
+        assert f.read_text() == original
+
+    def test_malformed_row_removed_from_file(self, tmp_path):
+        """A non-case-number row in rows 3+ is removed from the file."""
+        f = tmp_path / "InvNmbrs.csv"
+        f.write_text("Jane Smith,(555) 867-5309\nCase #\nC1052089\nNOTANUMBER\nC1052090\n")
+        validate_and_clean_invnmbrs(str(f), str(tmp_path / "InvNmbrs_errors.log"))
+        result = read_invalid_numbers(str(f))
+        assert "NOTANUMBER" not in result
+        assert result == {"C1052089", "C1052090"}
+
+    def test_malformed_row_returned_in_list(self, tmp_path):
+        """The bad row is included in the return value with its row number."""
+        f = tmp_path / "InvNmbrs.csv"
+        f.write_text("Jane Smith,(555) 867-5309\nCase #\nNOTANUMBER\n")
+        result = validate_and_clean_invnmbrs(str(f), str(tmp_path / "InvNmbrs_errors.log"))
+        assert len(result) == 1
+        row_num, value = result[0]
+        assert row_num == 3
+        assert value == "NOTANUMBER"
+
+    def test_malformed_row_written_to_error_log(self, tmp_path):
+        """The bad row value is appended to the error log."""
+        f = tmp_path / "InvNmbrs.csv"
+        log = tmp_path / "InvNmbrs_errors.log"
+        f.write_text("Jane Smith,(555) 867-5309\nCase #\nNOTANUMBER\n")
+        validate_and_clean_invnmbrs(str(f), str(log))
+        assert log.exists()
+        assert "NOTANUMBER" in log.read_text()
+
+    def test_blank_rows_dropped_silently_not_logged(self, tmp_path):
+        """Blank rows are removed without being written to the error log."""
+        f = tmp_path / "InvNmbrs.csv"
+        log = tmp_path / "InvNmbrs_errors.log"
+        f.write_text("Jane Smith,(555) 867-5309\nCase #\nC1052089\n\nC1052090\n")
+        result = validate_and_clean_invnmbrs(str(f), str(log))
+        assert result == []
+        assert not log.exists()
+
+    def test_header_rows_preserved_after_cleanup(self, tmp_path):
+        """Rows 1 and 2 are always kept, even when bad case rows are removed."""
+        f = tmp_path / "InvNmbrs.csv"
+        f.write_text("Jane Smith,(555) 867-5309\nCase #\nNOTANUMBER\n")
+        validate_and_clean_invnmbrs(str(f), str(tmp_path / "InvNmbrs_errors.log"))
+        with open(str(f), newline="", encoding="utf-8") as fh:
+            lines = fh.readlines()
+        assert "Jane Smith" in lines[0]
+        assert lines[1].strip() == "Case #"

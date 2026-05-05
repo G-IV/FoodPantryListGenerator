@@ -24,7 +24,13 @@ import datetime
 import os
 
 from food_pantry.csv_writer import append_record, build_output_filename, count_existing_records
-from food_pantry.invalid_numbers import format_flag_banner, read_admin_contact, read_invalid_numbers
+from food_pantry.invalid_numbers import (
+    ensure_invnmbrs_exists,
+    format_flag_banner,
+    read_admin_contact,
+    read_invalid_numbers,
+    validate_and_clean_invnmbrs,
+)
 from food_pantry.scanner import parse_barcode
 
 
@@ -38,11 +44,20 @@ def main() -> None:
     # See docs/DeveloperReadme.md → Deployment for details.
     filepath = os.path.join(os.getcwd(), filename)
     invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
+    error_log_path = os.path.join(os.getcwd(), "InvNmbrs_errors.log")
+
+    created = ensure_invnmbrs_exists(invnmbrs_path)
+    validate_and_clean_invnmbrs(invnmbrs_path, error_log_path)
 
     record_count = count_existing_records(filepath)
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
+    if created:
+        print()
+        print("NOTE: InvNmbrs.csv was not found and has been created automatically.")
+        print("      Please open C:\\DoubleCheck\\InvNmbrs.csv in Notepad and update")
+        print("      line 1 with the Oasis Administrator's name and phone number.")
     print()
     print("Scan a barcode, or press Enter to exit.")
     print()

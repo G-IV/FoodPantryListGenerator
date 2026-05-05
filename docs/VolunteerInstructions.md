@@ -148,15 +148,40 @@ Once you have resolved the situation, see [Removing a Flagged Case Number](#remo
 C:\DoubleCheck\InvNmbrs.csv
 ```
 
-It is a simple list of case numbers that require additional review from an Oasis Administrator. The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
+**The List Generator creates this file automatically** the first time it runs, if it does not already exist. The auto-generated file contains just the two header rows — no case numbers are flagged yet. The Oasis Administrator should open the file in Notepad and update line 1 with their name and phone number before the first pantry day. The application will display a reminder notice on screen when it creates the file.
 
-**If the file does not exist**, the List Generator behaves as it always has — no barcodes are flagged and all scans are logged normally. You only need to create the file if you have case numbers to flag.
+The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
 
 ---
 
-### Creating the File from Scratch
+### Setting Up the File for the First Time
 
-If `InvNmbrs.csv` does not yet exist in `C:\DoubleCheck\`, create it using Notepad:
+When the List Generator runs for the first time, it creates `InvNmbrs.csv` automatically with a blank contact line and no flagged case numbers. You will see a notice on screen prompting you to update it.
+
+Open the file in Notepad and update line 1 with the Oasis Administrator's name and phone number:
+
+1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
+2. Right-click `InvNmbrs.csv` and choose **Open with > Notepad**.
+3. Replace the first line with your name and phone number:
+
+```
+Pantry Admin,(555) 867-5309
+Case #
+```
+
+Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number. This is the contact information the volunteer will see in the red banner.
+
+4. Save the file (`Ctrl+S`).
+
+The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
+
+> **If the file was accidentally deleted**, the List Generator will recreate the blank skeleton the next time it runs. Follow the steps above again to restore your contact details.
+
+---
+
+### Creating the File Manually (if needed)
+
+In most cases the List Generator creates `InvNmbrs.csv` automatically. If for any reason you need to create it by hand:
 
 1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
 2. Right-click in the folder, choose **New > Text Document**.
@@ -170,11 +195,9 @@ Pantry Admin,(555) 867-5309
 Case #
 ```
 
-Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number. This is the contact information the volunteer will see in the red banner.
+Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number.
 
 6. Save the file (`Ctrl+S`).
-
-The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
 
 ---
 
