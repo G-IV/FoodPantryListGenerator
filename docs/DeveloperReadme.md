@@ -262,7 +262,7 @@ If you see anything other than `3.12.x`, install 3.12 before continuing (see pla
 A virtual environment is an isolated Python installation scoped to this project. You should always use one. Here's why it matters:
 
 - **Python version mismatches.** Your system may have Python 3.9 or 3.11 installed globally. Running `python` or `pip` without a virtual environment uses whatever version is on your system PATH, which may not be 3.12. A virtual environment lets you pin the exact version this project requires.
-- **Dependency isolation.** `pip install` without a virtual environment installs packages globally, which can conflict with other projects on your machine. A virtual environment keeps this project's dependencies (`pytest`, `pyinstaller`) separate.
+Dependency isolation. pip install without a virtual environment installs packages globally, which can conflict with other projects on your machine. A virtual environment keeps this project's dependencies separate.
 - **Reproducibility.** Another developer cloning the repo and following these steps will end up with the same environment you have.
 
 The `.venv/` directory is in `.gitignore` — virtual environments are machine-specific and should never be committed.
