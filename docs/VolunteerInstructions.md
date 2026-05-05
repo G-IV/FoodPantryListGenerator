@@ -133,7 +133,7 @@ When a volunteer scans a barcode that appears in `InvNmbrs.csv`, the screen imme
 
 ```
   FLAGGED — DO NOT ISSUE: C1052089
-  Contact administrator: Pantry Admin — 555-0100
+  Contact administrator: Pantry Admin — (555) 867-5309
 ```
 
 The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the output file.
@@ -168,11 +168,11 @@ If `InvNmbrs.csv` does not yet exist in `C:\DoubleCheck\`, create it using Notep
 5. Enter your contact information on the first line, then the column header on the second line:
 
 ```
-Pantry Admin,555-0100
+Pantry Admin,(555) 867-5309
 Case #
 ```
 
-Replace `Pantry Admin` with your name and `555-0100` with your phone number. This is the contact information the volunteer will see in the red banner.
+Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number. This is the contact information the volunteer will see in the red banner.
 
 6. Save the file (`Ctrl+S`).
 
@@ -192,7 +192,7 @@ The change takes effect on the very next scan at the List Generator station — 
 **Example file with two flagged case numbers:**
 
 ```
-Pantry Admin,555-0100
+Pantry Admin,(555) 867-5309
 Case #
 C1052089
 C1052090
@@ -214,7 +214,7 @@ The next time the volunteer scans that barcode, it will be logged normally.
 
 | Row | Content | Example |
 |-----|---------|---------|
-| 1 | Your name and phone number, separated by a comma | `Pantry Admin,555-0100` |
+| 1 | Your name and phone number, separated by a comma | `Pantry Admin,(555) 867-5309` |
 | 2 | Column header — type this exactly | `Case #` |
 | 3 and below | One flagged case number per line | `C1052089` |
 
