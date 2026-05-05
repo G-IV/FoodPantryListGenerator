@@ -150,7 +150,7 @@ Once you have resolved the situation, see [Removing a Flagged Case Number](#remo
 C:\DoubleCheck\InvNmbrs.csv
 ```
 
-It is a simple list of case numbers that should not receive assistance. The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
+It is a simple list of case numbers that require additional review from an Oasis Administrator. The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
 
 **If the file does not exist**, the List Generator behaves as it always has — no barcodes are flagged and all scans are logged normally. You only need to create the file if you have case numbers to flag.
 
