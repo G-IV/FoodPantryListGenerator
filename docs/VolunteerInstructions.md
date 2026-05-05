@@ -9,8 +9,6 @@
 
 The process of entering data is most accurate when there is a second step, called **verification**, that is performed to check the accuracy of the first entry of data.
 
-In addition to having two different stations that log pantry assistance, St. Andrew's now has a third station that logs a list of all the case numbers that were served that day. This station is in the **Agape Room**, which will help us log anyone who may have slipped past the two stations in the foyer.
-
 The volunteer will use a scanner to read the barcode ID card/image of everyone entering the Sunrise Room to shop. If the person is a proxy for someone else (they will be carrying a "proxy" card), please scan the barcode ID card/image of the **household for which they are picking up**.
 
 The program used is named **FoodPantryListGenerator**. It is not an Oasis program, so the volunteer does not have to be a trained Oasis volunteer who has passed the Confidentiality Quiz.
