@@ -23,7 +23,13 @@ The program will display the output filename before exiting.
 import datetime
 import os
 
-from food_pantry.csv_writer import append_record, build_output_filename, count_existing_records
+from food_pantry.csv_writer import (
+    append_flagged_record,
+    append_record,
+    build_flagged_filename,
+    build_output_filename,
+    count_existing_records,
+)
 from food_pantry.invalid_numbers import (
     ensure_invnmbrs_exists,
     format_flag_banner,
@@ -43,6 +49,8 @@ def main() -> None:
     # so the file lands there automatically.
     # See docs/DeveloperReadme.md → Deployment for details.
     filepath = os.path.join(os.getcwd(), filename)
+    flagged_filename = build_flagged_filename(today)
+    flagged_filepath = os.path.join(os.getcwd(), flagged_filename)
     invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
     error_log_path = os.path.join(os.getcwd(), "InvNmbrs_errors.log")
 
@@ -78,6 +86,8 @@ def main() -> None:
         flagged = read_invalid_numbers(invnmbrs_path)
         if case_number in flagged:
             contact = read_admin_contact(invnmbrs_path)
+            now = datetime.datetime.now()
+            append_flagged_record(flagged_filepath, case_number, now)
             print(f"{status_prefix}  \033[1;31m\u2717\033[0m" + "              ")
             for line in format_flag_banner(case_number, contact):
                 print(line)

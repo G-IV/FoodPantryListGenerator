@@ -38,6 +38,7 @@ def _run_main(inputs, flagged_set, contact, existing_records=0):
         patch("builtins.input", side_effect=inputs),
         patch("FoodPantryListGenerator.count_existing_records", return_value=existing_records),
         patch("FoodPantryListGenerator.append_record") as mock_append,
+        patch("FoodPantryListGenerator.append_flagged_record") as mock_flagged_append,
         patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
         patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
         patch("FoodPantryListGenerator.read_invalid_numbers", return_value=flagged_set),
@@ -46,7 +47,7 @@ def _run_main(inputs, flagged_set, contact, existing_records=0):
     ):
         app.main()
 
-    return mock_append, printed_lines
+    return mock_append, mock_flagged_append, printed_lines
 
 
 # ---------------------------------------------------------------------------
@@ -56,7 +57,7 @@ def _run_main(inputs, flagged_set, contact, existing_records=0):
 class TestUnflaggedScan:
     def test_unflagged_scan_written_to_csv(self):
         """A scan not in InvNmbrs.csv is written to the output file."""
-        mock_append, _ = _run_main(
+        mock_append, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -67,7 +68,7 @@ class TestUnflaggedScan:
 
     def test_multiple_unflagged_scans_all_written(self):
         """Multiple clean scans all reach the CSV writer."""
-        mock_append, _ = _run_main(
+        mock_append, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
             contact=None,
@@ -76,7 +77,7 @@ class TestUnflaggedScan:
 
     def test_unflagged_scan_no_banner_printed(self):
         """A clean scan does not trigger any banner output."""
-        _, printed = _run_main(
+        _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
@@ -91,16 +92,36 @@ class TestUnflaggedScan:
 class TestFlaggedScan:
     def test_flagged_scan_not_written_to_csv(self):
         """A flagged scan must not be written to the output file."""
-        mock_append, _ = _run_main(
+        mock_append, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
         )
         mock_append.assert_not_called()
 
+    def test_flagged_scan_written_to_flagged_log(self):
+        """A flagged scan is recorded in the flagged-barcode log."""
+        _, mock_flagged_append, _ = _run_main(
+            inputs=["{[C]01052089}", ""],
+            flagged_set={"C1052089"},
+            contact="Jane Smith — 555-0100",
+        )
+        mock_flagged_append.assert_called_once()
+        _, case_number, _ = mock_flagged_append.call_args[0]
+        assert case_number == "C1052089"
+
+    def test_unflagged_scan_not_written_to_flagged_log(self):
+        """A clean scan must not appear in the flagged-barcode log."""
+        _, mock_flagged_append, _ = _run_main(
+            inputs=["{[C]01052089}", ""],
+            flagged_set=set(),
+            contact=None,
+        )
+        mock_flagged_append.assert_not_called()
+
     def test_flagged_scan_prints_banner(self):
         """A flagged scan triggers a printed banner."""
-        _, printed = _run_main(
+        _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -109,7 +130,7 @@ class TestFlaggedScan:
 
     def test_banner_contains_case_number(self):
         """The banner names the specific case number that was flagged."""
-        _, printed = _run_main(
+        _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -118,7 +139,7 @@ class TestFlaggedScan:
 
     def test_banner_contains_contact_info(self):
         """The banner includes the administrator contact from row 1."""
-        _, printed = _run_main(
+        _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -127,7 +148,7 @@ class TestFlaggedScan:
 
     def test_banner_no_contact_does_not_crash(self):
         """If InvNmbrs.csv has no contact info, the banner still shows."""
-        _, printed = _run_main(
+        _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact=None,
@@ -136,7 +157,7 @@ class TestFlaggedScan:
 
     def test_scanning_continues_after_flagged_scan(self):
         """After a flagged scan the loop continues; subsequent scans proceed."""
-        mock_append, _ = _run_main(
+        mock_append, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -169,6 +190,7 @@ class TestRecordCounter:
             patch("builtins.input", side_effect=capture_input),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.append_record"),
+            patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
@@ -217,6 +239,7 @@ class TestMidSessionFileUpdate:
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.append_record",
                   side_effect=lambda *a: mock_appends.append(a)),
+            patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
@@ -247,6 +270,7 @@ class TestMidSessionFileUpdate:
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.append_record",
                   side_effect=lambda *a: mock_appends.append(a)),
+            patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
