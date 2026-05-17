@@ -109,3 +109,18 @@ Updating does not require reinstalling the certificate or recreating the shortcu
 2. Copy it to `C:\DoubleCheck\`, replacing the existing file.
 
 The desktop shortcut and all existing data files are unaffected.
+
+---
+
+## Uninstalling the certificate
+
+If you no longer want the certificate trusted on a computer (for example, after testing on a personal PC), you can remove it:
+
+1. Press **Win + R**, type `certlm.msc`, and press **Enter**.
+   *(If prompted by User Account Control, click **Yes**.)*
+2. In the left panel, expand **Trusted Root Certification Authorities → Certificates**.
+3. Find the entry for this certificate (look for the organization name in the **Issued To** column).
+4. Right-click it → **Delete**.
+5. Click **Yes** to confirm.
+
+The certificate is now removed. The application will still run, but Windows will show a SmartScreen warning again when launching it on that computer.
