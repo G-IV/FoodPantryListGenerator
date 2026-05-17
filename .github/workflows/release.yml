@@ -63,6 +63,34 @@ jobs:
         # The resulting file lands in dist/FoodPantryListGenerator.exe
         run: pyinstaller --onefile --name FoodPantryListGenerator FoodPantryListGenerator.py
 
+      - name: Sign executable
+        # Decodes the PFX from a base64 GitHub Secret, signs the EXE, then
+        # deletes the PFX so it never persists in the runner's workspace.
+        # Requires two repository secrets:
+        #   CERT_PFX_BASE64  — base64-encoded ChurchCert.pfx
+        #   CERT_PFX_PASSWORD — password set when the PFX was exported
+        shell: powershell
+        env:
+          CERT_PFX_BASE64: ${{ secrets.CERT_PFX_BASE64 }}
+          CERT_PFX_PASSWORD: ${{ secrets.CERT_PFX_PASSWORD }}
+        run: |
+          # Write the PFX to disk from the base64 secret
+          $pfxPath = "ChurchCert.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:CERT_PFX_BASE64))
+
+          # Locate signtool.exe (included with the Windows SDK on GitHub runners)
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+                      Where-Object { $_.FullName -like "*x64*" } |
+                      Select-Object -First 1 -ExpandProperty FullName
+
+          # Sign with a trusted timestamp so the signature survives cert expiry
+          & $signtool sign /f $pfxPath /p $env:CERT_PFX_PASSWORD `
+              /tr http://timestamp.digicert.com /td sha256 /fd sha256 `
+              "dist\FoodPantryListGenerator.exe"
+
+          # Remove the PFX — never leave it on the runner
+          Remove-Item $pfxPath
+
       - name: Create GitHub Release and attach .exe
         uses: softprops/action-gh-release@v2
         with:
