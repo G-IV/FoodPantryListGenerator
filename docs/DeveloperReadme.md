@@ -63,6 +63,8 @@ FoodPantryListGenerator/
 │                                 See fixtures/README.md for the scenario key.
 │
 ├── docs/                        Documentation.
+│   ├── InstallationGuide.md     One-time setup guide for a new computer
+│   │                             (certificate install, folder, shortcut).
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
 │   ├── DeveloperReadme.md       This file.
 │   └── Scanner User Manual.pdf  User manual for the Tera D5100 scanner.
@@ -441,7 +443,9 @@ If you do need to build manually (e.g. for testing the .exe locally before relea
 
 ## Deploying to the Surface Pro
 
-Once a release is published on GitHub:
+For a **first-time setup** on a new computer (certificate installation, folder creation, shortcut creation), see [InstallationGuide.md](InstallationGuide.md).
+
+For a **version update** on a computer that is already set up:
 
 1. On the Surface Pro, open a browser and go to the [Releases page](https://github.com/G-IV/FoodPantryListGenerator/releases).
 2. Download `FoodPantryListGenerator.exe` from the latest release.
