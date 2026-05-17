@@ -34,9 +34,9 @@ The executable is signed with a self-signed certificate. Windows will block the 
 
 ### Install the certificate
 
-You will need the `ChurchCert.cer` file. Ask the developer or administrator for this file if you do not have it.
-
-1. Locate `ChurchCert.cer` and double-click it.
+1. Download [`ChurchCert.cer`](ChurchCert.cer) from this repository.
+   *(On GitHub: click the link, then click the **Download raw file** button — the arrow icon near the top right.)*
+2. Locate the downloaded `ChurchCert.cer` and double-click it.
 2. Click **Install Certificate**.
 3. On the *Store Location* screen, select **Local Machine** and click **Next**.
    *(If prompted by User Account Control, click **Yes**.)*

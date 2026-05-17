@@ -63,6 +63,9 @@ FoodPantryListGenerator/
 │                                 See fixtures/README.md for the scenario key.
 │
 ├── docs/                        Documentation.
+│   ├── ChurchCert.cer           Public code-signing certificate. Safe to
+│   │                             distribute — install on each church computer
+│   │                             to trust signed releases. See InstallationGuide.md.
 │   ├── InstallationGuide.md     One-time setup guide for a new computer
 │   │                             (certificate install, folder, shortcut).
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
