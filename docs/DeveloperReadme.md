@@ -70,6 +70,9 @@ FoodPantryListGenerator/
 │   │                             (certificate install, folder, shortcut).
 │   ├── VolunteerInstructions.md Step-by-step guide for pantry volunteers.
 │   ├── DeveloperReadme.md       This file.
+│   ├── scan-loop-flowchart.html Visual flowchart of the main scanning loop.
+│   │                             Render it at:
+│   │                             https://htmlpreview.github.io/?https://github.com/G-IV/FoodPantryListGenerator/blob/main/docs/scan-loop-flowchart.html
 │   └── Scanner User Manual.pdf  User manual for the Tera D5100 scanner.
 │
 ├── .github/
