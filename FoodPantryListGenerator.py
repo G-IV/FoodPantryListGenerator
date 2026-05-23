@@ -26,8 +26,10 @@ import sys
 
 from food_pantry.lock import acquire_lock, release_lock
 from food_pantry.csv_writer import (
+    append_already_served_record,
     append_flagged_record,
     append_record,
+    build_already_served_filename,
     build_flagged_filename,
     build_output_filename,
     count_existing_records,
@@ -69,6 +71,8 @@ def _run_session() -> None:
     filepath = os.path.join(os.getcwd(), filename)
     flagged_filename = build_flagged_filename(today)
     flagged_filepath = os.path.join(os.getcwd(), flagged_filename)
+    already_served_filename = build_already_served_filename(today)
+    already_served_filepath = os.path.join(os.getcwd(), already_served_filename)
     invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
     error_log_path = os.path.join(os.getcwd(), "InvNmbrs_errors.log")
 
@@ -121,7 +125,7 @@ def _run_session() -> None:
         if case_number in today_scanned_set and case_number != last_scanned:
             contact = read_admin_contact(invnmbrs_path)
             now = datetime.datetime.now()
-            append_flagged_record(flagged_filepath, case_number, now)
+            append_already_served_record(already_served_filepath, case_number, now)
             for line in format_already_served_banner(case_number, contact):
                 print(line)
             continue
