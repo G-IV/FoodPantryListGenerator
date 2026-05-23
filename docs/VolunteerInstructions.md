@@ -1,7 +1,7 @@
 # List Generator Volunteer Position
 ## Scan-In Verification Station
 
-*Last updated: 01/10/2026*
+*Last updated: 05/23/2026*
 
 ---
 
@@ -47,6 +47,8 @@ Use the scanner to read each customer's barcode ID card or image. The screen wil
 
 > **Duplicate scans:** If you accidentally scan a barcode twice, the program will display a red **DUPLICATE** alert and skip the second scan automatically. No action is needed — the duplicate is not saved to the list.
 
+> **Already served today:** If a barcode that was scanned **earlier in the current session** is scanned again (and it was not the immediately prior scan), the program will display a red **ALREADY SERVED TODAY** alert. Contact your administrator using the information shown on the screen. The scan is not added to the customer list.
+
 ### If a Barcode Won't Scan
 
 Occasionally a customer's barcode will not scan, or they will present a yellow **"Forgot Card"** slip of paper. When that happens:
@@ -58,21 +60,11 @@ Occasionally a customer's barcode will not scan, or they will present a yellow *
 
 - To **exit** the program, press **Enter** on a blank scan prompt.
 - To **re-enter** the program, double-click the **FoodPantry ListGenerator** icon.
+- If the program is **already open** and you double-click the icon again, a message will appear and the new window will close on its own after you press Enter. Click the existing program window in the taskbar at the bottom of the screen.
 
 ### During a Lull
 
 If you have downtime, sort the cards from the basket by color/letter and group them together. There should be eight to ten of each letter and several "Newly Registered" cards. The color/letter cards will go back to Station 1 and the "Newly Registered" cards will go back to Stations 1 and 2.
-
----
-
-## Troubleshooting: Double Screen Problem
-
-If you notice two List Generator windows open at the same time:
-
-1. Close **each window** by pressing **Enter** in each one.
-2. Reopen the List Generator by double-clicking its icon.
-
-You will not lose any data. This typically happens when the computer goes idle and the screen goes dark — when you wake it up, the taskbar icon for List Generator may not be visible, so the icon gets double-clicked again. If you do see the icon in the taskbar at the bottom of the screen, **click it** to bring the existing window back up rather than opening a new one.
 
 ---
 

@@ -42,6 +42,8 @@ def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=Non
         printed_lines.append(args[0] if args else "")
 
     with (
+        patch("FoodPantryListGenerator.acquire_lock", return_value=True),
+        patch("FoodPantryListGenerator.release_lock"),
         patch("builtins.input", side_effect=inputs),
         patch("FoodPantryListGenerator.count_existing_records", return_value=existing_records),
         patch("FoodPantryListGenerator.read_last_case_number", return_value=last_scanned),
@@ -387,14 +389,16 @@ class TestAlreadyServedScan:
         )
         assert mock_append.call_count == 2
 
-    def test_barcode_scanned_earlier_not_written_to_flagged_log(self):
-        """Re-scanning an earlier barcode must not touch the flagged-barcode log."""
+    def test_barcode_scanned_earlier_written_to_flagged_log(self):
+        """Re-scanning an earlier barcode is logged to the flagged file for admin review."""
         _, mock_flagged_append, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
         )
-        mock_flagged_append.assert_not_called()
+        mock_flagged_append.assert_called_once()
+        _, case_number, _ = mock_flagged_append.call_args[0]
+        assert case_number == "C1052089"
 
     def test_already_served_banner_is_displayed(self):
         """The ALREADY SERVED banner is printed when a prior-session barcode is re-scanned."""

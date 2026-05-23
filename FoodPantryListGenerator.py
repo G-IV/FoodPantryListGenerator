@@ -22,7 +22,9 @@ The program will display the output filename before exiting.
 
 import datetime
 import os
+import sys
 
+from food_pantry.lock import acquire_lock, release_lock
 from food_pantry.csv_writer import (
     append_flagged_record,
     append_record,
@@ -45,6 +47,18 @@ from food_pantry.scanner import parse_barcode
 
 
 def main() -> None:
+    if not acquire_lock():
+        print("FoodPantryListGenerator is already running.")
+        print("Check the taskbar at the bottom of the screen and click the existing window.")
+        input("\nPress Enter to close this window.")
+        sys.exit(0)
+    try:
+        _run_session()
+    finally:
+        release_lock()
+
+
+def _run_session() -> None:
     today = datetime.date.today()
     filename = build_output_filename(today)
 
@@ -106,6 +120,8 @@ def main() -> None:
         # Check 3: scanned earlier this session (not the immediately prior scan).
         if case_number in today_scanned_set and case_number != last_scanned:
             contact = read_admin_contact(invnmbrs_path)
+            now = datetime.datetime.now()
+            append_flagged_record(flagged_filepath, case_number, now)
             for line in format_already_served_banner(case_number, contact):
                 print(line)
             continue
