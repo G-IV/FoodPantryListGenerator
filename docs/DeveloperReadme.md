@@ -50,9 +50,9 @@ The original application (v1.0.0) was written in C and compiled with Visual Stud
 
 ```
 FoodPantryListGenerator/
-├── FoodPantryListGenerator.py   Entry point. Thin wrapper around the main loop.
-│                                 Run this file (or the compiled .exe) to start
-│                                 a scanning session.
+├── FoodPantryListGenerator.py   Entry point. Acquires a single-instance lock,
+│                                 then runs the scanning session. Run this file
+│                                 (or the compiled .exe) to start a session.
 │
 ├── food_pantry/                 Core package. All business logic lives here.
 │                                 One module per concern — see Module reference
@@ -86,7 +86,7 @@ FoodPantryListGenerator/
 └── .gitignore
 ```
 
-> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode is scanned, the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) for the format.
+> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode or already-served re-scan is detected, the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) for the format. While the application is running it also holds a `FoodPantryListGenerator.lock` file in the working directory to prevent a second instance from starting; the lock file is removed on exit and cleaned up automatically if left behind by a crash.
 
 ---
 
@@ -94,7 +94,16 @@ FoodPantryListGenerator/
 
 ### `FoodPantryListGenerator.py`
 
-The entry point. It handles the main scanning loop: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for flagged scans, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+The entry point. Contains `main()`, which acquires a single-instance lock via `lock.py` before starting a session — if another instance is already running it prints a message and exits. The scanning work is done in `_run_session()`: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for both flagged scans and already-served re-scans, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+
+### `food_pantry/lock.py`
+
+Enforces single-instance operation. Provides two public functions:
+
+- `acquire_lock()` — writes the current process PID to `FoodPantryListGenerator.lock` in the working directory and returns `True`. Returns `False` if a live process already holds the lock. If the lock file exists but the PID inside it is no longer running (stale lock from a crash), it is overwritten automatically.
+- `release_lock()` — removes the lock file. Safe to call even if the file is absent.
+
+On Windows, PID existence is checked via `ctypes.OpenProcess` with `PROCESS_QUERY_LIMITED_INFORMATION`. On POSIX systems, `os.kill(pid, 0)` is used. This distinction exists because on Windows, `os.kill` with signal 0 calls `TerminateProcess` rather than performing a harmless existence check.
 
 ### `food_pantry/invalid_numbers.py`
 
@@ -177,7 +186,9 @@ Key behaviours:
 
 - The file is created on the first flagged scan of the session. If it already exists (from a previous session on the same calendar date, or from the current session), new rows are appended.
 - Unlike the scanned barcodes file, this file has **no empty merge columns** — it is for the administrator's review only and is never imported into Oasis.
-- Each row represents one scan event for a flagged case number, in chronological order.
+- Each row represents one scan event, in chronological order.
+- **Flagged barcodes** (case numbers in `InvNmbrs.csv`) are written here instead of the main scanned barcodes file.
+- **Already-served re-scans** — a barcode scanned earlier in the same session (but not as the immediately prior scan) — are also written to this file using the same two-column format.
 
 ---
 
@@ -510,6 +521,7 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Storage | 238 GB |
 | Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
-| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (flagged scans only — created only when a flagged barcode is encountered) |
+| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all clean scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (flagged scans and already-served re-scans — created only when at least one such scan occurs) |
 | Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (auto-created on first run; managed by the pantry administrator) |
+| Lock file | `C:\DoubleCheck\FoodPantryListGenerator.lock` (created at startup, removed on exit; stale locks are cleaned up automatically) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |
