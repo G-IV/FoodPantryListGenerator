@@ -15,8 +15,10 @@ import tempfile
 
 import pytest
 from food_pantry.csv_writer import (
+    append_already_served_record,
     append_flagged_record,
     append_record,
+    build_already_served_filename,
     build_flagged_filename,
     build_output_filename,
     count_existing_records,
@@ -226,6 +228,68 @@ class TestAppendFlaggedRecord:
             filepath = os.path.join(tmpdir, "flagged.csv")
             append_flagged_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
             append_flagged_record(filepath, "C1300001", datetime.datetime(2026, 5, 4, 9, 16))
+            with open(filepath, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            assert len(lines) == 2
+            assert lines[0].startswith("C1200001,")
+            assert lines[1].startswith("C1300001,")
+
+
+# ---------------------------------------------------------------------------
+# build_already_served_filename — produces the dated already-served log filename
+# ---------------------------------------------------------------------------
+
+class TestBuildAlreadyServedFilename:
+    def test_standard_date(self):
+        """A typical pantry date produces the correct filename."""
+        assert build_already_served_filename(datetime.date(2026, 5, 4)) == "already_served20260504.csv"
+
+    def test_single_digit_month_and_day_are_zero_padded(self):
+        """Month and day are zero-padded in the filename."""
+        assert build_already_served_filename(datetime.date(2026, 1, 5)) == "already_served20260105.csv"
+
+    def test_filename_ends_with_csv(self):
+        """Output is always a .csv file."""
+        assert build_already_served_filename(datetime.date(2026, 5, 4)).endswith(".csv")
+
+    def test_filename_contains_correct_prefix(self):
+        """The filename prefix distinguishes it from the flagged-barcode log."""
+        assert build_already_served_filename(datetime.date(2026, 5, 4)).startswith("already_served20")
+
+    def test_different_from_flagged_filename(self):
+        """The already-served filename is distinct from the flagged-barcode filename."""
+        today = datetime.date(2026, 5, 4)
+        assert build_already_served_filename(today) != build_flagged_filename(today)
+
+
+# ---------------------------------------------------------------------------
+# append_already_served_record — writes rows to the already-served log
+# ---------------------------------------------------------------------------
+
+class TestAppendAlreadyServedRecord:
+    def test_creates_file_if_not_exists(self):
+        """append_already_served_record creates the file when it does not already exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filepath = os.path.join(tmpdir, "already_served.csv")
+            assert not os.path.exists(filepath)
+            append_already_served_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
+            assert os.path.exists(filepath)
+
+    def test_row_format_is_case_number_and_timestamp(self):
+        """Each row is: case_number,timestamp — no empty merge columns."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filepath = os.path.join(tmpdir, "already_served.csv")
+            append_already_served_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
+            with open(filepath, "r", encoding="utf-8") as f:
+                line = f.readline()
+            assert line == "C1200001,5/4/2026 9:15\n"
+
+    def test_appends_without_overwriting(self):
+        """Multiple already-served scans accumulate in the same file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filepath = os.path.join(tmpdir, "already_served.csv")
+            append_already_served_record(filepath, "C1200001", datetime.datetime(2026, 5, 4, 9, 15))
+            append_already_served_record(filepath, "C1300001", datetime.datetime(2026, 5, 4, 9, 16))
             with open(filepath, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             assert len(lines) == 2

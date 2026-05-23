@@ -89,7 +89,7 @@ FoodPantryListGenerator/
 └── .gitignore
 ```
 
-> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode or already-served re-scan is detected, the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) for the format. While the application is running it also holds a `FoodPantryListGenerator.lock` file in the working directory to prevent a second instance from starting; the lock file is removed on exit and cleaned up automatically if left behind by a crash.
+> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode is scanned the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory; whenever an already-served re-scan is detected it creates (or appends to) `already_served20YYMMDD.csv`. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) and [Already-served log](#already-served-log---already_served20yymmddcsv) for their formats. While the application is running it also holds a `FoodPantryListGenerator.lock` file in the working directory to prevent a second instance from starting; the lock file is removed on exit and cleaned up automatically if left behind by a crash.
 
 ---
 
@@ -97,7 +97,7 @@ FoodPantryListGenerator/
 
 ### `FoodPantryListGenerator.py`
 
-The entry point. Contains `main()`, which acquires a single-instance lock via `lock.py` before starting a session — if another instance is already running it prints a message and exits. The scanning work is done in `_run_session()`: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for both flagged scans and already-served re-scans, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+The entry point. Contains `main()`, which acquires a single-instance lock via `lock.py` before starting a session — if another instance is already running it prints a message and exits. The scanning work is done in `_run_session()`: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for flagged scans, calls `append_already_served_record()` for already-served re-scans, and exits on blank input. It also calls `ensure_invnmbrs_exists()` and `validate_and_clean_invnmbrs()` at startup to ensure the flagged-numbers file is present and well-formed. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
 
 ### `food_pantry/lock.py`
 
@@ -134,6 +134,8 @@ Manages both output CSV files.
 For the **scanned barcodes file** (`scanned_barcodes20YYMMDD.csv`): builds the filename, counts existing rows on startup, formats timestamps, and appends records. The row format (6 fields: case number, 4 empty fields, timestamp) is intentional — the empty fields exist for alignment with the Oasis pantry assistance report merge. **Do not change this row format without confirming the merge process still works.**
 
 For the **flagged barcode log** (`flagged_barcodes20YYMMDD.csv`): provides `build_flagged_filename()` and `append_flagged_record()`. The flagged log uses a simple two-column format (`case_number,timestamp`) — **no empty merge fields** — because this file is for the administrator's review only and is never merged into Oasis.
+
+For the **already-served log** (`already_served20YYMMDD.csv`): provides `build_already_served_filename()` and `append_already_served_record()`. Same two-column format as the flagged log. Kept separate so the administrator can distinguish between admin-flagged barcodes and same-day re-scans when reviewing after pantry.
 
 ### `tests/test_scanner.py` and `tests/test_csv_writer.py`
 
@@ -191,7 +193,29 @@ Key behaviours:
 - Unlike the scanned barcodes file, this file has **no empty merge columns** — it is for the administrator's review only and is never imported into Oasis.
 - Each row represents one scan event, in chronological order.
 - **Flagged barcodes** (case numbers in `InvNmbrs.csv`) are written here instead of the main scanned barcodes file.
-- **Already-served re-scans** — a barcode scanned earlier in the same session (but not as the immediately prior scan) — are also written to this file using the same two-column format.
+
+---
+
+### Already-served log — `already_served20YYMMDD.csv`
+
+Produced by `FoodPantryListGenerator.exe` during a session whenever a barcode is scanned that was already recorded earlier in the same session (non-consecutive re-scan). The filename uses the same date-stamp convention as the other files.
+
+**No header row.**
+
+| Position | Field | Type | Example |
+|----------|-------|------|---------|
+| 1 | Case number | String — `C` prefix + digits | `C1052089` |
+| 2 | Timestamp | `M/D/YYYY H:MM` (no leading zeros) | `5/5/2026 9:15` |
+
+```
+C1052089,5/5/2026 9:15
+```
+
+Key behaviours:
+
+- The file is created on the first already-served detection of the session. If it already exists, new rows are appended.
+- Same two-column format as the flagged barcode log — no empty merge columns.
+- Kept separate from the flagged barcode log so the administrator can distinguish between admin-flagged barcodes and same-day re-scans when reviewing after pantry.
 
 ---
 
@@ -524,7 +548,7 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Storage | 238 GB |
 | Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
-| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all clean scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (flagged scans and already-served re-scans — created only when at least one such scan occurs) |
+| Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all clean scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (admin-flagged scans — created only when at least one such scan occurs), `C:\DoubleCheck\already_served20YYMMDD.csv` (already-served re-scans — created only when at least one such re-scan occurs) |
 | Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (auto-created on first run; managed by the pantry administrator) |
 | Lock file | `C:\DoubleCheck\FoodPantryListGenerator.lock` (created at startup, removed on exit; stale locks are cleaned up automatically) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |

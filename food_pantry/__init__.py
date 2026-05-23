@@ -15,4 +15,4 @@ Future modules (not yet implemented) should be added here as the
 application grows. See GitHub Issues for the current roadmap.
 """
 
-__version__ = "2.2.0-beta.2"
+__version__ = "2.2.0-beta.3"

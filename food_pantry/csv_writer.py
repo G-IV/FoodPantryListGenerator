@@ -192,6 +192,51 @@ def append_flagged_record(
         f.write(f"{case_number},{ts}\n")
 
 
+def build_already_served_filename(date: datetime.date) -> str:
+    """
+    Return the dated CSV filename for the already-served log.
+
+    Separate from the flagged-barcode log: the flagged log records barcodes
+    blocked by the administrator; this file records barcodes that were
+    detected as already served earlier in the same session.
+
+    Args:
+        date: The date to embed in the filename.
+
+    Returns:
+        Filename string, e.g. "already_served20260504.csv"
+
+    Examples:
+        >>> import datetime
+        >>> build_already_served_filename(datetime.date(2026, 5, 4))
+        'already_served20260504.csv'
+    """
+    return f"already_served20{date.strftime('%y%m%d')}.csv"
+
+
+def append_already_served_record(
+    filepath: str,
+    case_number: str,
+    timestamp: datetime.datetime,
+) -> None:
+    """
+    Append a single already-served record to the already-served log CSV.
+
+    Called when a barcode is scanned that was already recorded earlier in the
+    current session (non-consecutive re-scan).  Keeps these events separate
+    from admin-flagged records so Tina can distinguish between the two when
+    reviewing after pantry.
+
+    Args:
+        filepath:    Absolute or relative path to the already-served log CSV.
+        case_number: Normalized case number, e.g. "C1052089".
+        timestamp:   The datetime at which the barcode was re-scanned.
+    """
+    ts = format_timestamp(timestamp)
+    with open(filepath, "a", encoding="utf-8") as f:
+        f.write(f"{case_number},{ts}\n")
+
+
 def read_last_case_number(filepath: str, today: datetime.date) -> Optional[str]:
     """
     Return the case number from the last row of today's output file, or None.

@@ -27,8 +27,8 @@ def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=Non
     """
     Run main() with fully mocked I/O.
 
-    Returns (mock_append, mock_flagged_append, printed_lines) where
-    printed_lines is a flat list of strings that were passed to print().
+    Returns (mock_append, mock_flagged_append, mock_already_served_append,
+    printed_lines) where printed_lines is a flat list of strings passed to print().
 
     today_scanned_set seeds the session duplicate-guard.  Each call that
     omits it gets a fresh empty set, so scans made during the run accumulate
@@ -51,6 +51,7 @@ def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=Non
               return_value=today_scanned_set),
         patch("FoodPantryListGenerator.append_record") as mock_append,
         patch("FoodPantryListGenerator.append_flagged_record") as mock_flagged_append,
+        patch("FoodPantryListGenerator.append_already_served_record") as mock_already_served_append,
         patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
         patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
         patch("FoodPantryListGenerator.read_invalid_numbers", return_value=flagged_set),
@@ -60,7 +61,7 @@ def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=Non
     ):
         app.main()
 
-    return mock_append, mock_flagged_append, printed_lines
+    return mock_append, mock_flagged_append, mock_already_served_append, printed_lines
 
 
 # ---------------------------------------------------------------------------
@@ -70,7 +71,7 @@ def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=Non
 class TestUnflaggedScan:
     def test_unflagged_scan_written_to_csv(self):
         """A scan not in InvNmbrs.csv is written to the output file."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -81,7 +82,7 @@ class TestUnflaggedScan:
 
     def test_multiple_unflagged_scans_all_written(self):
         """Multiple clean scans all reach the CSV writer."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
             contact=None,
@@ -90,7 +91,7 @@ class TestUnflaggedScan:
 
     def test_unflagged_scan_no_banner_printed(self):
         """A clean scan does not trigger any banner output."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
@@ -105,7 +106,7 @@ class TestUnflaggedScan:
 class TestFlaggedScan:
     def test_flagged_scan_not_written_to_csv(self):
         """A flagged scan must not be written to the output file."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -114,7 +115,7 @@ class TestFlaggedScan:
 
     def test_flagged_scan_written_to_flagged_log(self):
         """A flagged scan is recorded in the flagged-barcode log."""
-        _, mock_flagged_append, _ = _run_main(
+        _, mock_flagged_append, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -125,7 +126,7 @@ class TestFlaggedScan:
 
     def test_unflagged_scan_not_written_to_flagged_log(self):
         """A clean scan must not appear in the flagged-barcode log."""
-        _, mock_flagged_append, _ = _run_main(
+        _, mock_flagged_append, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
@@ -134,7 +135,7 @@ class TestFlaggedScan:
 
     def test_flagged_scan_prints_banner(self):
         """A flagged scan triggers a printed banner."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -143,7 +144,7 @@ class TestFlaggedScan:
 
     def test_banner_contains_case_number(self):
         """The banner names the specific case number that was flagged."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -152,7 +153,7 @@ class TestFlaggedScan:
 
     def test_banner_contains_contact_info(self):
         """The banner includes the administrator contact from row 1."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -161,7 +162,7 @@ class TestFlaggedScan:
 
     def test_banner_no_contact_does_not_crash(self):
         """If InvNmbrs.csv has no contact info, the banner still shows."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact=None,
@@ -170,7 +171,7 @@ class TestFlaggedScan:
 
     def test_scanning_continues_after_flagged_scan(self):
         """After a flagged scan the loop continues; subsequent scans proceed."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
@@ -296,7 +297,7 @@ class TestMidSessionFileUpdate:
 class TestConsecutiveDuplicate:
     def test_consecutive_duplicate_not_written_to_csv(self):
         """Second consecutive scan of the same barcode is suppressed."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -305,7 +306,7 @@ class TestConsecutiveDuplicate:
 
     def test_consecutive_duplicate_not_written_to_flagged_log(self):
         """Consecutive duplicates are suppressed without touching the flagged log."""
-        _, mock_flagged_append, _ = _run_main(
+        _, mock_flagged_append, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
@@ -314,7 +315,7 @@ class TestConsecutiveDuplicate:
 
     def test_consecutive_duplicate_shows_duplicate_banner(self):
         """The DUPLICATE banner is displayed for a consecutive re-scan."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -323,7 +324,7 @@ class TestConsecutiveDuplicate:
 
     def test_clean_scan_after_duplicate_is_written(self):
         """After a duplicate is suppressed, the next distinct scan is written."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
             contact=None,
@@ -332,7 +333,7 @@ class TestConsecutiveDuplicate:
 
     def test_seeded_last_scanned_catches_duplicate_on_first_scan(self):
         """If last_scanned is seeded from the file, the first scan can be a duplicate."""
-        mock_append, _, printed = _run_main(
+        mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane — 555",
@@ -343,7 +344,7 @@ class TestConsecutiveDuplicate:
 
     def test_different_barcodes_not_treated_as_duplicate(self):
         """Two different barcodes scanned consecutively are both written."""
-        mock_append, _, printed = _run_main(
+        mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
             contact=None,
@@ -353,7 +354,7 @@ class TestConsecutiveDuplicate:
 
     def test_third_scan_of_same_barcode_is_also_duplicate(self):
         """Each re-scan after the first is independently suppressed."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
@@ -362,7 +363,7 @@ class TestConsecutiveDuplicate:
 
     def test_flagged_scan_checked_before_duplicate(self):
         """A flagged barcode shows FLAGGED even if it matches last_scanned."""
-        mock_append, mock_flagged_append, printed = _run_main(
+        mock_append, mock_flagged_append, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Admin — 555",
@@ -382,27 +383,27 @@ class TestConsecutiveDuplicate:
 class TestAlreadyServedScan:
     def test_barcode_scanned_earlier_not_written_to_csv(self):
         """Re-scanning a barcode from earlier in the session does not write a new row."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
         )
         assert mock_append.call_count == 2
 
-    def test_barcode_scanned_earlier_written_to_flagged_log(self):
-        """Re-scanning an earlier barcode is logged to the flagged file for admin review."""
-        _, mock_flagged_append, _ = _run_main(
+    def test_barcode_scanned_earlier_written_to_already_served_log(self):
+        """Re-scanning an earlier barcode is logged to the already-served log, not the flagged log."""
+        _, _, mock_already_served_append, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
         )
-        mock_flagged_append.assert_called_once()
-        _, case_number, _ = mock_flagged_append.call_args[0]
+        mock_already_served_append.assert_called_once()
+        _, case_number, _ = mock_already_served_append.call_args[0]
         assert case_number == "C1052089"
 
     def test_already_served_banner_is_displayed(self):
         """The ALREADY SERVED banner is printed when a prior-session barcode is re-scanned."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -411,7 +412,7 @@ class TestAlreadyServedScan:
 
     def test_already_served_banner_contains_case_number(self):
         """The ALREADY SERVED banner includes the re-scanned case number."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -420,7 +421,7 @@ class TestAlreadyServedScan:
 
     def test_already_served_banner_contains_contact_info(self):
         """The ALREADY SERVED banner includes the administrator contact string."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
@@ -429,7 +430,7 @@ class TestAlreadyServedScan:
 
     def test_scanning_continues_after_already_served(self):
         """After the ALREADY SERVED alert the loop continues and records new barcodes."""
-        mock_append, _, _ = _run_main(
+        mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", "{[C]01052091}", ""],
             flagged_set=set(),
             contact=None,
@@ -441,7 +442,7 @@ class TestAlreadyServedScan:
     def test_seeded_today_set_catches_already_served_on_first_scan(self):
         """A case number in today_scanned_set at startup triggers ALREADY SERVED
         on the very first scan of that barcode in this run."""
-        mock_append, _, printed = _run_main(
+        mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane — 555",
@@ -453,7 +454,7 @@ class TestAlreadyServedScan:
 
     def test_flagged_checked_before_already_served(self):
         """A barcode that is both flagged and in today's set shows FLAGGED, not ALREADY SERVED."""
-        mock_append, mock_flagged_append, printed = _run_main(
+        mock_append, mock_flagged_append, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Admin — 555",
@@ -466,7 +467,7 @@ class TestAlreadyServedScan:
 
     def test_already_served_does_not_show_duplicate_banner(self):
         """A non-consecutive re-scan shows ALREADY SERVED, not the DUPLICATE banner."""
-        _, _, printed = _run_main(
+        _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,

@@ -240,6 +240,20 @@ If a flagged barcode was scanned multiple times in one session, each scan appear
 
 ---
 
+### Reviewing the Already-Served Log
+
+Every time a barcode is scanned a second (or additional) time during the same pantry session — after it was already recorded earlier — the List Generator logs it separately:
+
+```
+C:\DoubleCheck\already_served20YYMMDD.csv
+```
+
+The date in the filename matches the date of the session (e.g. `already_served20260505.csv` for May 5, 2026). The format is the same as the flagged barcode log: one row per re-scan, with the case number and time.
+
+This file is created only when at least one already-served detection occurs. It is kept separate from the flagged barcode log so you can clearly tell the difference between a case number you flagged in advance and a family that may have come through the line twice.
+
+---
+
 ### Removing a Flagged Case Number
 
 1. Open `C:\DoubleCheck\InvNmbrs.csv` in Notepad.
