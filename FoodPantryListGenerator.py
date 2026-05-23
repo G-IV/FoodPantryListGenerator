@@ -80,15 +80,11 @@ def main() -> None:
             # Blank input — volunteer pressed Enter to exit.
             break
 
-        status_prefix = f"  \u2192 {case_number}"
-        print(f"{status_prefix}  processing...", end="\r", flush=True)
-
         flagged = read_invalid_numbers(invnmbrs_path)
         if case_number in flagged:
             contact = read_admin_contact(invnmbrs_path)
             now = datetime.datetime.now()
             append_flagged_record(flagged_filepath, case_number, now)
-            print(f"{status_prefix}  \033[1;31m\u2717\033[0m" + "              ")
             for line in format_flag_banner(case_number, contact):
                 print(line)
             continue
@@ -96,7 +92,6 @@ def main() -> None:
         record_count += 1
         now = datetime.datetime.now()
         append_record(filepath, case_number, now)
-        print(f"{status_prefix}  \033[1;32m\u2713\033[0m" + "              ")
 
     print()
     print(f"Barcodes saved to: {filename}")
