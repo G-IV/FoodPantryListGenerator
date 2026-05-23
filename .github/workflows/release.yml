@@ -96,3 +96,4 @@ jobs:
         with:
           files: dist/FoodPantryListGenerator.exe
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
