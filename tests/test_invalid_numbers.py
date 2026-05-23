@@ -12,6 +12,7 @@ import os
 import pytest
 from food_pantry.invalid_numbers import (
     ensure_invnmbrs_exists,
+    format_already_served_banner,
     format_duplicate_banner,
     format_flag_banner,
     read_admin_contact,
@@ -151,6 +152,11 @@ class TestFormatFlagBanner:
         """When contact is None, no contact line appears in the output."""
         lines = format_flag_banner("C1052089", None)
         assert not any("Contact" in line for line in lines)
+
+    def test_body_explains_flagged_reason(self):
+        """The banner body states an administrator has flagged the barcode."""
+        lines = format_flag_banner("C1052089", None)
+        assert any("An administrator has flagged this barcode" in line for line in lines)
 
 
 # ---------------------------------------------------------------------------
@@ -305,3 +311,40 @@ class TestFormatDuplicateBanner:
         lines = format_duplicate_banner("C1052089", "Jane — 555")
         colored = [l for l in lines if "DUPLICATE" in l or "Contact" in l]
         assert all("\033[" in line for line in colored)
+
+
+# ---------------------------------------------------------------------------
+# format_already_served_banner — amber alert for non-consecutive re-scans
+# ---------------------------------------------------------------------------
+
+class TestFormatAlreadyServedBanner:
+    def test_contains_case_number(self):
+        """The banner names the specific case number that was scanned again."""
+        lines = format_already_served_banner("C1052089", None)
+        assert any("C1052089" in line for line in lines)
+
+    def test_contains_already_served_keyword(self):
+        """The banner uses ALREADY SERVED so it is distinguishable from other alerts."""
+        lines = format_already_served_banner("C1052089", None)
+        assert any("ALREADY SERVED" in line for line in lines)
+
+    def test_contains_contact_when_provided(self):
+        """The administrator contact is shown when available."""
+        lines = format_already_served_banner("C1052089", "Jane Smith — 555-0100")
+        assert any("Jane Smith — 555-0100" in line for line in lines)
+
+    def test_no_contact_line_when_contact_is_none(self):
+        """If contact is None, no Contact line is added."""
+        lines = format_already_served_banner("C1052089", None)
+        assert not any("Contact" in line for line in lines)
+
+    def test_uses_ansi_escape_codes(self):
+        """The already-served banner uses ANSI escape codes for colour."""
+        lines = format_already_served_banner("C1052089", "Jane — 555")
+        colored = [l for l in lines if "ALREADY SERVED" in l or "Contact" in l]
+        assert all("\033[" in line for line in colored)
+
+    def test_body_explains_already_served_reason(self):
+        """The banner body states the barcode has been serviced earlier today."""
+        lines = format_already_served_banner("C1052089", None)
+        assert any("serviced earlier today" in line for line in lines)

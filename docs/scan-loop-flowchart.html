@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Barcode Scanning Session — Process Flow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #eef2f7;
+      padding: 36px 20px 64px;
+    }
+    h1 {
+      text-align: center;
+      color: #1e3a5f;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #667;
+      font-size: 0.88rem;
+      margin-bottom: 32px;
+    }
+    .chart-wrap {
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+    svg {
+      display: block;
+      border-radius: 14px;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.13);
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      justify-content: center;
+      margin-top: 28px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: #555;
+    }
+    .swatch {
+      width: 22px; height: 15px;
+      border-radius: 3px;
+      border: 1.5px solid;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Barcode Scanning Session — Process Flow</h1>
+<p class="subtitle">What happens at each step when a volunteer scans a barcode</p>
+
+<div class="chart-wrap">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 1140" width="950" height="1140" style="background:#fff">
+<defs>
+  <marker id="ah"    markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#444"/></marker>
+  <marker id="ah-g"  markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#2e7d32"/></marker>
+  <marker id="ah-r"  markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#b71c1c"/></marker>
+  <marker id="ah-ret"markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#aaa"/></marker>
+  <marker id="ah-a"  markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#f39c12"/></marker>
+  <filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.10)"/></filter>
+</defs>
+
+<!-- ─────────────────────────────────────────────────────────
+     SCAN LOOP REGION
+     ───────────────────────────────────────────────────────── -->
+<rect x="22" y="228" width="906" height="842" rx="12"
+      fill="#f8fbff" stroke="#ccd8ec" stroke-width="1.5" stroke-dasharray="8,5"/>
+<text x="36" y="244" font-family="'Segoe UI',sans-serif" font-size="11"
+      fill="#90a8cc" font-weight="700" letter-spacing="0.1em">REPEATED FOR EVERY SCAN</text>
+
+<!-- ─────────────────────────────────────────────────────────
+     RETURN RAIL  (dashed lines, drawn first so nodes sit on top)
+     ───────────────────────────────────────────────────────── -->
+<!-- Horizontal branches from side-nodes to rail at x=886 -->
+<path d="M 822 558 L 886 558" stroke="#bbb" stroke-width="1.4" stroke-dasharray="5,4" fill="none"/>
+<path d="M 822 714 L 886 714" stroke="#bbb" stroke-width="1.4" stroke-dasharray="5,4" fill="none"/>
+<path d="M 822 870 L 886 870" stroke="#bbb" stroke-width="1.4" stroke-dasharray="5,4" fill="none"/>
+<path d="M 476 1018 L 886 1018" stroke="#bbb" stroke-width="1.4" stroke-dasharray="5,4" fill="none"/>
+<!-- Vertical rail -->
+<path d="M 886 1018 L 886 287" stroke="#bbb" stroke-width="1.4" stroke-dasharray="5,4" fill="none"/>
+<!-- Entry into "Waiting for scan" right edge with arrowhead -->
+<path d="M 886 287 L 478 287" stroke="#bbb" stroke-width="1.4" stroke-dasharray="5,4" fill="none" marker-end="url(#ah-ret)"/>
+<!-- Label -->
+<rect x="597" y="270" width="148" height="18" rx="4" fill="#f8fbff"/>
+<text x="671" y="283" font-family="'Segoe UI',sans-serif" font-size="11.5"
+      fill="#aaa" text-anchor="middle">↩  back to next scan</text>
+
+<!-- ─────────────────────────────────────────────────────────
+     FORWARD ARROWS
+     ───────────────────────────────────────────────────────── -->
+<!-- 1 → 2 -->
+<line x1="320" y1="76" x2="320" y2="118" stroke="#444" stroke-width="1.8" marker-end="url(#ah)"/>
+<!-- 2 → 3 -->
+<line x1="320" y1="204" x2="320" y2="258" stroke="#444" stroke-width="1.8" marker-end="url(#ah)"/>
+<!-- 3 → 4 -->
+<line x1="320" y1="320" x2="320" y2="374" stroke="#444" stroke-width="1.8" marker-end="url(#ah)"/>
+<!-- 4 → Exit (right, blank/exit) -->
+<path d="M 438 412 L 590 412" stroke="#555" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+<!-- 4 → 6 (down, valid barcode) -->
+<line x1="320" y1="452" x2="320" y2="518" stroke="#2e7d32" stroke-width="1.8" marker-end="url(#ah-g)"/>
+<!-- 6 → Flagged alert (right) -->
+<path d="M 440 558 L 572 558" stroke="#b71c1c" stroke-width="1.8" fill="none" marker-end="url(#ah-r)"/>
+<!-- 6 → 7 (down, not flagged) -->
+<line x1="320" y1="598" x2="320" y2="674" stroke="#2e7d32" stroke-width="1.8" marker-end="url(#ah-g)"/>
+<!-- 7 → Already served alert (right) -->
+<path d="M 440 714 L 572 714" stroke="#b71c1c" stroke-width="1.8" fill="none" marker-end="url(#ah-r)"/>
+<!-- 7 → 8 (down, not served this session) -->
+<line x1="320" y1="754" x2="320" y2="830" stroke="#2e7d32" stroke-width="1.8" marker-end="url(#ah-g)"/>
+<!-- 8 → Dup alert (right) -->
+<path d="M 440 870 L 572 870" stroke="#b71c1c" stroke-width="1.8" fill="none" marker-end="url(#ah-r)"/>
+<!-- 8 → 10 (down, new clean scan) -->
+<line x1="320" y1="910" x2="320" y2="978" stroke="#2e7d32" stroke-width="1.8" marker-end="url(#ah-g)"/>
+
+<!-- ─────────────────────────────────────────────────────────
+     ARROW LABELS
+     ───────────────────────────────────────────────────────── -->
+<!-- 4 → Exit -->
+<rect x="450" y="399" width="116" height="18" rx="3" fill="white"/>
+<text x="508" y="412" font-family="'Segoe UI',sans-serif" font-size="11.5"
+      fill="#555" text-anchor="middle">No scan — exit session</text>
+<!-- 4 → 6  YES -->
+<rect x="290" y="460" width="60" height="17" rx="3" fill="white"/>
+<text x="320" y="473" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#2e7d32" font-weight="700" text-anchor="middle">Scanned</text>
+<!-- 6 → Flagged alert -->
+<rect x="450" y="545" width="64" height="17" rx="3" fill="white"/>
+<text x="482" y="558" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#b71c1c" font-weight="700" text-anchor="middle">Flagged!</text>
+<!-- 6 → 7 -->
+<rect x="288" y="606" width="64" height="17" rx="3" fill="white"/>
+<text x="320" y="619" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#2e7d32" font-weight="600" text-anchor="middle">Not flagged</text>
+<!-- 7 → Already served alert -->
+<rect x="447" y="701" width="100" height="17" rx="3" fill="white"/>
+<text x="497" y="714" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#b71c1c" font-weight="700" text-anchor="middle">Already served!</text>
+<!-- 7 → 8 -->
+<rect x="276" y="762" width="88" height="17" rx="3" fill="white"/>
+<text x="320" y="775" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#2e7d32" font-weight="600" text-anchor="middle">First visit today</text>
+<!-- 8 → Dup -->
+<rect x="450" y="857" width="68" height="17" rx="3" fill="white"/>
+<text x="484" y="870" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#b71c1c" font-weight="700" text-anchor="middle">Duplicate!</text>
+<!-- 8 → 10 -->
+<rect x="284" y="918" width="72" height="17" rx="3" fill="white"/>
+<text x="320" y="931" font-family="'Segoe UI',sans-serif" font-size="12"
+      fill="#2e7d32" font-weight="600" text-anchor="middle">New customer</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 1 — SESSION STARTS
+     ═════════════════════════════════════════════════════════ -->
+<rect x="223" y="28" width="194" height="48" rx="24"
+      fill="#1e3a5f" filter="url(#sh)"/>
+<text x="320" y="57" font-family="'Segoe UI',sans-serif" font-size="15"
+      font-weight="700" fill="white" text-anchor="middle">Session Starts</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 2 — ONE-TIME SETUP
+     ═════════════════════════════════════════════════════════ -->
+<rect x="162" y="118" width="316" height="86" rx="8"
+      fill="#eef2f9" stroke="#4a6fa5" stroke-width="1.5" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" font-size="13" fill="#1e3a5f" text-anchor="middle">
+  <tspan x="320" y="145">Today's output file is opened</tspan>
+  <tspan x="320" dy="19">Previous scan count is loaded</tspan>
+  <tspan x="320" dy="19">Flagged case number list is loaded</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 3 — WAITING FOR A SCAN  (loop entry — highlighted)
+     ═════════════════════════════════════════════════════════ -->
+<rect x="162" y="258" width="316" height="62" rx="8"
+      fill="#e3f2fd" stroke="#1565c0" stroke-width="2.2" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" text-anchor="middle">
+  <tspan x="320" y="282" font-size="14.5" font-weight="700" fill="#0d2b5e">Waiting for a scan…</tspan>
+  <tspan x="320" dy="19" font-size="11.5" fill="#1565c0">"Record #N — Please scan a barcode"</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 4 — BARCODE RECEIVED?
+     ═════════════════════════════════════════════════════════ -->
+<polygon points="320,374 438,412 320,452 202,412"
+         fill="#fefce8" stroke="#b8860b" stroke-width="1.8" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" font-size="13" fill="#3d2e00" text-anchor="middle">
+  <tspan x="320" y="406">Barcode</tspan>
+  <tspan x="320" dy="17">received?</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 5 — SESSION ENDS
+     ═════════════════════════════════════════════════════════ -->
+<rect x="591" y="386" width="216" height="52" rx="26"
+      fill="#455a64" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" text-anchor="middle">
+  <tspan x="699" y="406" font-size="13.5" font-weight="700" fill="white">Session Ends</tspan>
+  <tspan x="699" dy="18" font-size="11.5" fill="#cfd8dc">✓  File is saved and closed</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 6 — ON THE BLOCKED LIST?
+     ═════════════════════════════════════════════════════════ -->
+<polygon points="320,518 440,558 320,598 200,558"
+         fill="#fefce8" stroke="#b8860b" stroke-width="1.8" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" font-size="13" fill="#3d2e00" text-anchor="middle">
+  <tspan x="320" y="552">On the flagged</tspan>
+  <tspan x="320" dy="17">list?</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 7 — FLAGGED ALERT
+     ═════════════════════════════════════════════════════════ -->
+<rect x="572" y="502" width="250" height="112" rx="8"
+      fill="#fde8e8" stroke="#c0392b" stroke-width="1.8" filter="url(#sh)"/>
+<rect x="572" y="502" width="7" height="112" rx="4" fill="#c0392b"/>
+<text font-family="'Segoe UI',sans-serif" text-anchor="middle">
+  <tspan x="699" y="531" font-size="13.5" font-weight="700" fill="#c0392b">🚫  FLAGGED — DO NOT ISSUE</tspan>
+  <tspan x="699" dy="19" font-size="12.5" fill="#5c1a1a">An administrator has flagged this barcode</tspan>
+  <tspan x="699" dy="17" font-size="12" fill="#5c1a1a">Contact your administrator</tspan>
+  <tspan x="699" dy="17" font-size="11" fill="#a08080">Attempt is automatically logged</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 7 — ALREADY SERVED THIS SESSION?
+     ═════════════════════════════════════════════════════════ -->
+<polygon points="320,674 440,714 320,754 200,714"
+         fill="#fefce8" stroke="#b8860b" stroke-width="1.8" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" font-size="13" fill="#3d2e00" text-anchor="middle">
+  <tspan x="320" y="708">Already served</tspan>
+  <tspan x="320" dy="17">this session?</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 7 ALERT — ALREADY SERVED
+     ═════════════════════════════════════════════════════════ -->
+<rect x="572" y="666" width="250" height="112" rx="8"
+      fill="#fde8e8" stroke="#c0392b" stroke-width="1.8" filter="url(#sh)"/>
+<rect x="572" y="666" width="7" height="112" rx="4" fill="#c0392b"/>
+<text font-family="'Segoe UI',sans-serif" text-anchor="middle">
+  <tspan x="699" y="692" font-size="13.5" font-weight="700" fill="#c0392b">🚫  ALREADY SERVED TODAY</tspan>
+  <tspan x="699" dy="18" font-size="12.5" fill="#5c1a1a">This barcode has been</tspan>
+  <tspan x="699" dy="15" font-size="12.5" fill="#5c1a1a">serviced earlier today</tspan>
+  <tspan x="699" dy="17" font-size="12" fill="#5c1a1a">Contact your administrator</tspan>
+  <tspan x="699" dy="15" font-size="11" fill="#a08080">Nothing is written to the file</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 8 — SAME AS LAST SCAN?
+     ═════════════════════════════════════════════════════════ -->
+<polygon points="320,830 440,870 320,910 200,870"
+         fill="#fefce8" stroke="#b8860b" stroke-width="1.8" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" font-size="13" fill="#3d2e00" text-anchor="middle">
+  <tspan x="320" y="864">Same as last</tspan>
+  <tspan x="320" dy="17">scan?</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 9 — DUPLICATE ALERT
+     ═════════════════════════════════════════════════════════ -->
+<rect x="572" y="822" width="250" height="96" rx="8"
+      fill="#fff3e0" stroke="#e67e22" stroke-width="1.8" filter="url(#sh)"/>
+<rect x="572" y="822" width="7" height="96" rx="4" fill="#e67e22"/>
+<text font-family="'Segoe UI',sans-serif" text-anchor="middle">
+  <tspan x="699" y="849" font-size="13.5" font-weight="700" fill="#e65100">⚠  DUPLICATE SCAN</tspan>
+  <tspan x="699" dy="19" font-size="12.5" fill="#4a2800">This barcode was just scanned</tspan>
+  <tspan x="699" dy="17" font-size="12" fill="#4a2800">Scan is skipped automatically</tspan>
+  <tspan x="699" dy="16" font-size="11" fill="#a09070">Nothing is written to the file</tspan>
+</text>
+
+<!-- ═════════════════════════════════════════════════════════
+     NODE 10 — SCAN RECORDED
+     ═════════════════════════════════════════════════════════ -->
+<rect x="162" y="978" width="316" height="76" rx="8"
+      fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.8" filter="url(#sh)"/>
+<text font-family="'Segoe UI',sans-serif" text-anchor="middle">
+  <tspan x="320" y="1004" font-size="15" font-weight="700" fill="#1b5e20">✓  Scan recorded</tspan>
+  <tspan x="320" dy="20" font-size="12.5" fill="#2e7d32">Case number added to today's list</tspan>
+  <tspan x="320" dy="18" font-size="11.5" fill="#666">Record count advances by 1</tspan>
+</text>
+
+</svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="swatch" style="background:#1e3a5f;border-color:#1e3a5f"></div>
+    Session start / end
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#eef2f9;border-color:#4a6fa5"></div>
+    One-time setup
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#e3f2fd;border-color:#1565c0"></div>
+    Repeating step (scan loop)
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#fefce8;border-color:#b8860b"></div>
+    Decision point
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#fde8e8;border-color:#c0392b"></div>
+    Flagged — do not issue
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#fde8e8;border-color:#c0392b"></div>
+    Already served this session
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#fff3e0;border-color:#e67e22"></div>
+    Duplicate — skip
+  </div>
+  <div class="legend-item">
+    <div class="swatch" style="background:#e8f5e9;border-color:#2e7d32"></div>
+    Success — scan saved
+  </div>
+</div>
+
+</body>
+</html>

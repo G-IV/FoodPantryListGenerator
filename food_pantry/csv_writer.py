@@ -225,3 +225,40 @@ def read_last_case_number(filepath: str, today: datetime.date) -> Optional[str]:
         return None
     case_number = last_line.split(",")[0].strip()
     return case_number or None
+
+
+def read_existing_case_numbers(filepath: str, today: datetime.date) -> set:
+    """
+    Return the set of all case numbers already recorded in today's output file.
+
+    Used at startup to seed the session-level duplicate guard.  Every barcode
+    that was written to the file earlier in today's session (or in a previous
+    run on the same day) is included so that re-scanning any of them triggers
+    the ALREADY SERVED alert rather than recording the barcode again.
+
+    Only reads from the file if its filename matches today's expected output
+    filename — this prevents seeding from a previous pantry day's file.
+
+    Args:
+        filepath: Absolute or relative path to the output CSV file.
+        today:    The current date, used to verify the file is from today.
+
+    Returns:
+        A set of case number strings (e.g. {"C1052089", "C1052090"}).
+        Returns an empty set if the file does not exist, is from a different
+        date, or contains no rows.
+    """
+    expected_name = build_output_filename(today)
+    if os.path.basename(filepath) != expected_name:
+        return set()
+    if not os.path.exists(filepath):
+        return set()
+    case_numbers: set = set()
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:
+                case_number = stripped.split(",")[0].strip()
+                if case_number:
+                    case_numbers.add(case_number)
+    return case_numbers

@@ -21,6 +21,7 @@ from food_pantry.csv_writer import (
     build_output_filename,
     count_existing_records,
     format_timestamp,
+    read_existing_case_numbers,
     read_last_case_number,
 )
 
@@ -280,3 +281,55 @@ class TestReadLastCaseNumber:
                 f.write("C1052089,,,,, 5/23/2026 9:00\n")
                 f.write("C1052090,,,,, 5/23/2026 9:05\n")
             assert read_last_case_number(filepath, today) == "C1052090"
+
+
+# ---------------------------------------------------------------------------
+# read_existing_case_numbers — seeds the session duplicate-guard set
+# ---------------------------------------------------------------------------
+
+class TestReadExistingCaseNumbers:
+    def test_returns_empty_set_when_file_does_not_exist(self):
+        """Returns an empty set if today's file has not been created yet."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            assert read_existing_case_numbers(filepath, today) == set()
+
+    def test_returns_empty_set_when_file_is_from_different_date(self):
+        """Returns an empty set if the file's name does not match today's date."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            yesterday = datetime.date(2026, 5, 22)
+            filepath = os.path.join(tmpdir, build_output_filename(yesterday))
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("C1052089,,,,, 5/22/2026 9:00\n")
+            assert read_existing_case_numbers(filepath, today) == set()
+
+    def test_returns_empty_set_when_file_is_empty(self):
+        """Returns an empty set if today's file exists but has no rows."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            open(filepath, "w").close()
+            assert read_existing_case_numbers(filepath, today) == set()
+
+    def test_returns_case_number_from_single_row_file(self):
+        """Returns a set containing the one case number in a single-row file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("C1052089,,,,, 5/23/2026 9:00\n")
+            assert read_existing_case_numbers(filepath, today) == {"C1052089"}
+
+    def test_returns_all_case_numbers_from_multi_row_file(self):
+        """Returns a set containing every case number when multiple rows exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("C1052089,,,,, 5/23/2026 9:00\n")
+                f.write("C1052090,,,,, 5/23/2026 9:05\n")
+                f.write("C1052091,,,,, 5/23/2026 9:10\n")
+            result = read_existing_case_numbers(filepath, today)
+            assert result == {"C1052089", "C1052090", "C1052091"}
