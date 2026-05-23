@@ -15,6 +15,7 @@ absent and replaced with a fresh one.
 """
 
 import os
+import sys
 
 _LOCK_FILENAME = "FoodPantryListGenerator.lock"
 
@@ -24,7 +25,22 @@ def _lock_path() -> str:
 
 
 def _is_pid_running(pid: int) -> bool:
-    """Return True if a process with *pid* is currently alive."""
+    """Return True if a process with *pid* is currently alive.
+
+    Uses ctypes on Windows to safely query the process without risk of
+    accidentally sending a termination signal (os.kill on Windows maps
+    signal 0 to TerminateProcess, which is unsafe for existence checks).
+    """
+    if sys.platform == "win32":
+        import ctypes
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        handle = ctypes.windll.kernel32.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+        )
+        if handle == 0:
+            return False
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return True
     try:
         os.kill(pid, 0)
         return True
