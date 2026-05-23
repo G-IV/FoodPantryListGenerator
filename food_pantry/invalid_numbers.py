@@ -5,9 +5,8 @@ Reads InvNmbrs.csv, which the pantry administrator maintains to flag case
 numbers that should not receive assistance (e.g. duplicate visits, known
 fraud, administrative holds).
 
-The file is re-read on every scan so changes take effect immediately
-without restarting the application.  The administrator can add or remove
-a case number from InvNmbrs.csv while a session is in progress.
+The file is re-read only when its modification time changes, so edits made
+by the administrator between scans take effect on the next scan after saving.
 
 File format
 -----------
@@ -195,6 +194,60 @@ def format_flag_banner(case_number: str, contact: Optional[str]) -> list:
     lines = [
         "",
         f"{_RED}  FLAGGED — DO NOT ISSUE: {case_number}  {_RESET}",
+        f"{_RED}  An administrator has flagged this barcode  {_RESET}",
+    ]
+    if contact:
+        lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")
+    lines.append("")
+    return lines
+
+
+def format_duplicate_banner(case_number: str, contact: Optional[str]) -> list:
+    """
+    Return the lines to print when a consecutive duplicate barcode is scanned.
+
+    Uses the same visual treatment as format_flag_banner (red background,
+    white bold text).  The volunteer is shown the same contact information
+    so they can reach the administrator if the situation requires it.
+
+    Args:
+        case_number: The normalized case number that was scanned twice in a row.
+        contact: The formatted administrator contact string, or None.
+
+    Returns:
+        A list of strings to be printed, one per line.
+    """
+    lines = [
+        "",
+        f"{_RED}  DUPLICATE — DO NOT ISSUE: {case_number}  {_RESET}",
+    ]
+    if contact:
+        lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")
+    lines.append("")
+    return lines
+
+
+def format_already_served_banner(case_number: str, contact: Optional[str]) -> list:
+    """
+    Return the lines to print when a barcode is re-scanned that was already
+    recorded earlier in the current session (non-consecutive duplicate).
+
+    Uses the same red background and visual treatment as format_flag_banner.
+    The volunteer sees the same "DO NOT ISSUE" style alert; the only difference
+    is the body line explaining why — this person was already served today
+    rather than being flagged by an administrator.
+
+    Args:
+        case_number: The normalized case number that was scanned again.
+        contact: The formatted administrator contact string, or None.
+
+    Returns:
+        A list of strings to be printed, one per line.
+    """
+    lines = [
+        "",
+        f"{_RED}  ALREADY SERVED — DO NOT ISSUE: {case_number}  {_RESET}",
+        f"{_RED}  This barcode has been serviced earlier today  {_RESET}",
     ]
     if contact:
         lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")

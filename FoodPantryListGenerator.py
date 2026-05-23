@@ -29,9 +29,13 @@ from food_pantry.csv_writer import (
     build_flagged_filename,
     build_output_filename,
     count_existing_records,
+    read_existing_case_numbers,
+    read_last_case_number,
 )
 from food_pantry.invalid_numbers import (
     ensure_invnmbrs_exists,
+    format_already_served_banner,
+    format_duplicate_banner,
     format_flag_banner,
     read_admin_contact,
     read_invalid_numbers,
@@ -58,6 +62,10 @@ def main() -> None:
     validate_and_clean_invnmbrs(invnmbrs_path, error_log_path)
 
     record_count = count_existing_records(filepath)
+    last_scanned = read_last_case_number(filepath, today)
+    today_scanned_set = read_existing_case_numbers(filepath, today)
+    flagged_set = read_invalid_numbers(invnmbrs_path)
+    flagged_mtime = os.path.getmtime(invnmbrs_path)
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
@@ -80,8 +88,14 @@ def main() -> None:
             # Blank input — volunteer pressed Enter to exit.
             break
 
-        flagged = read_invalid_numbers(invnmbrs_path)
-        if case_number in flagged:
+        # Refresh the flagged set only if InvNmbrs.csv has changed on disk.
+        current_mtime = os.path.getmtime(invnmbrs_path)
+        if current_mtime != flagged_mtime:
+            flagged_set = read_invalid_numbers(invnmbrs_path)
+            flagged_mtime = current_mtime
+
+        # Check 2: blocked by administrator.
+        if case_number in flagged_set:
             contact = read_admin_contact(invnmbrs_path)
             now = datetime.datetime.now()
             append_flagged_record(flagged_filepath, case_number, now)
@@ -89,9 +103,43 @@ def main() -> None:
                 print(line)
             continue
 
+        # Check 3: scanned earlier this session (not the immediately prior scan).
+        if case_number in today_scanned_set and case_number != last_scanned:
+            contact = read_admin_contact(invnmbrs_path)
+            for line in format_already_served_banner(case_number, contact):
+                print(line)
+            continue
+
+        # Check 4: same barcode as the very last scan (consecutive duplicate).
+        if case_number == last_scanned:
+            # Re-apply checks 2 and 3 in case status changed mid-session.
+            # (In practice check 2 was just evaluated above with a fresh
+            # flagged_set, and check 3 is logically False when
+            # case_number == last_scanned — both are included per spec.)
+            if case_number in flagged_set:
+                contact = read_admin_contact(invnmbrs_path)
+                now = datetime.datetime.now()
+                append_flagged_record(flagged_filepath, case_number, now)
+                for line in format_flag_banner(case_number, contact):
+                    print(line)
+                continue
+            if case_number in today_scanned_set and case_number != last_scanned:
+                contact = read_admin_contact(invnmbrs_path)
+                for line in format_already_served_banner(case_number, contact):
+                    print(line)
+                continue
+            # Both re-checks passed — genuine consecutive duplicate scan.
+            contact = read_admin_contact(invnmbrs_path)
+            for line in format_duplicate_banner(case_number, contact):
+                print(line)
+            continue
+
+        # All checks passed — record the scan.
         record_count += 1
         now = datetime.datetime.now()
         append_record(filepath, case_number, now)
+        today_scanned_set.add(case_number)
+        last_scanned = case_number
 
     print()
     print(f"Barcodes saved to: {filename}")

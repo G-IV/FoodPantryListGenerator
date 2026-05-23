@@ -45,7 +45,7 @@ Use the scanner to read each customer's barcode ID card or image. The screen wil
 <!-- TODO: Add screenshot of scanning prompt here -->
 <!-- ![Scanning prompt](images/scanning-prompt.png) -->
 
-> **Duplicate scans:** If you accidentally scan a barcode twice, ignore it. The extra entry will be removed by a separate program later.
+> **Duplicate scans:** If you accidentally scan a barcode twice, the program will display a red **DUPLICATE** alert and skip the second scan automatically. No action is needed — the duplicate is not saved to the list.
 
 ### If a Barcode Won't Scan
 

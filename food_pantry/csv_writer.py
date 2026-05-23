@@ -190,3 +190,75 @@ def append_flagged_record(
     ts = format_timestamp(timestamp)
     with open(filepath, "a", encoding="utf-8") as f:
         f.write(f"{case_number},{ts}\n")
+
+
+def read_last_case_number(filepath: str, today: datetime.date) -> Optional[str]:
+    """
+    Return the case number from the last row of today's output file, or None.
+
+    Used to seed last_scanned on startup so consecutive duplicate detection
+    works correctly when the application is closed and reopened mid-session.
+
+    Only reads from the file if its filename matches today's expected output
+    filename — this prevents seeding from a previous pantry day's file.
+
+    Args:
+        filepath: Absolute or relative path to the output CSV file.
+        today:    The current date, used to verify the file is from today.
+
+    Returns:
+        The case number string from the last row (e.g. "C1052089"), or None
+        if the file does not exist, is from a different date, or is empty.
+    """
+    expected_name = build_output_filename(today)
+    if os.path.basename(filepath) != expected_name:
+        return None
+    if not os.path.exists(filepath):
+        return None
+    last_line = None
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:
+                last_line = stripped
+    if last_line is None:
+        return None
+    case_number = last_line.split(",")[0].strip()
+    return case_number or None
+
+
+def read_existing_case_numbers(filepath: str, today: datetime.date) -> set:
+    """
+    Return the set of all case numbers already recorded in today's output file.
+
+    Used at startup to seed the session-level duplicate guard.  Every barcode
+    that was written to the file earlier in today's session (or in a previous
+    run on the same day) is included so that re-scanning any of them triggers
+    the ALREADY SERVED alert rather than recording the barcode again.
+
+    Only reads from the file if its filename matches today's expected output
+    filename — this prevents seeding from a previous pantry day's file.
+
+    Args:
+        filepath: Absolute or relative path to the output CSV file.
+        today:    The current date, used to verify the file is from today.
+
+    Returns:
+        A set of case number strings (e.g. {"C1052089", "C1052090"}).
+        Returns an empty set if the file does not exist, is from a different
+        date, or contains no rows.
+    """
+    expected_name = build_output_filename(today)
+    if os.path.basename(filepath) != expected_name:
+        return set()
+    if not os.path.exists(filepath):
+        return set()
+    case_numbers: set = set()
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:
+                case_number = stripped.split(",")[0].strip()
+                if case_number:
+                    case_numbers.add(case_number)
+    return case_numbers
