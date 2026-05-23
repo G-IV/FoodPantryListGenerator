@@ -21,6 +21,7 @@ from food_pantry.csv_writer import (
     build_output_filename,
     count_existing_records,
     format_timestamp,
+    read_last_case_number,
 )
 
 
@@ -229,3 +230,53 @@ class TestAppendFlaggedRecord:
             assert len(lines) == 2
             assert lines[0].startswith("C1200001,")
             assert lines[1].startswith("C1300001,")
+
+
+# ---------------------------------------------------------------------------
+# read_last_case_number — seeds last_scanned on startup
+# ---------------------------------------------------------------------------
+
+class TestReadLastCaseNumber:
+    def test_returns_none_when_file_does_not_exist(self):
+        """Returns None if today's file has not been created yet."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            assert read_last_case_number(filepath, today) is None
+
+    def test_returns_none_when_file_is_from_different_date(self):
+        """Returns None if the file's name does not match today's date."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            yesterday = datetime.date(2026, 5, 22)
+            filepath = os.path.join(tmpdir, build_output_filename(yesterday))
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("C1052089,,,,, 5/22/2026 9:00\n")
+            assert read_last_case_number(filepath, today) is None
+
+    def test_returns_none_when_file_is_empty(self):
+        """Returns None if today's file exists but has no rows."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            open(filepath, "w").close()
+            assert read_last_case_number(filepath, today) is None
+
+    def test_returns_case_number_from_single_row_file(self):
+        """Returns the case number from the only row in the file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("C1052089,,,,, 5/23/2026 9:00\n")
+            assert read_last_case_number(filepath, today) == "C1052089"
+
+    def test_returns_last_case_number_from_multi_row_file(self):
+        """Returns the case number from the final row when multiple rows exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            today = datetime.date(2026, 5, 23)
+            filepath = os.path.join(tmpdir, build_output_filename(today))
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("C1052089,,,,, 5/23/2026 9:00\n")
+                f.write("C1052090,,,,, 5/23/2026 9:05\n")
+            assert read_last_case_number(filepath, today) == "C1052090"

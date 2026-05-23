@@ -22,12 +22,12 @@ from unittest.mock import call, patch, MagicMock
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _run_main(inputs, flagged_set, contact, existing_records=0):
+def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=None):
     """
     Run main() with fully mocked I/O.
 
-    Returns (mock_append, printed_lines) where printed_lines is a flat list
-    of strings that were passed to print().
+    Returns (mock_append, mock_flagged_append, printed_lines) where
+    printed_lines is a flat list of strings that were passed to print().
     """
     printed_lines = []
 
@@ -37,12 +37,14 @@ def _run_main(inputs, flagged_set, contact, existing_records=0):
     with (
         patch("builtins.input", side_effect=inputs),
         patch("FoodPantryListGenerator.count_existing_records", return_value=existing_records),
+        patch("FoodPantryListGenerator.read_last_case_number", return_value=last_scanned),
         patch("FoodPantryListGenerator.append_record") as mock_append,
         patch("FoodPantryListGenerator.append_flagged_record") as mock_flagged_append,
         patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
         patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
         patch("FoodPantryListGenerator.read_invalid_numbers", return_value=flagged_set),
         patch("FoodPantryListGenerator.read_admin_contact", return_value=contact),
+        patch("os.path.getmtime", return_value=1000.0),
         patch("builtins.print", side_effect=capture_print),
     ):
         app.main()
@@ -189,13 +191,15 @@ class TestRecordCounter:
         with (
             patch("builtins.input", side_effect=capture_input),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
+            patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
             patch("FoodPantryListGenerator.append_record"),
             patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
-                  side_effect=[{"C1052089"}, set()]),
+                  return_value={"C1052089"}),
             patch("FoodPantryListGenerator.read_admin_contact", return_value="Admin — 555"),
+            patch("os.path.getmtime", return_value=1000.0),
             patch("builtins.print"),
         ):
             app.main()
@@ -216,18 +220,9 @@ class TestMidSessionFileUpdate:
     def test_case_added_to_invnmbrs_mid_session_is_caught(self):
         """
         If InvNmbrs.csv is updated between scans (case number added), the
-        next scan of that barcode should be blocked.  The file is re-read
-        on every scan.
+        next scan of that barcode should be blocked.  The flagged set is
+        refreshed when the file's mtime changes.
         """
-        read_call_count = [0]
-
-        def dynamic_flagged(*_):
-            read_call_count[0] += 1
-            # First scan: not yet flagged; second scan: now flagged
-            return set() if read_call_count[0] == 1 else {"C1052089"}
-
-        mock_append, _ = _run_main.__wrapped__ if hasattr(_run_main, "__wrapped__") else (None, None)
-
         printed_lines = []
 
         def capture_print(*args, **kwargs):
@@ -237,14 +232,16 @@ class TestMidSessionFileUpdate:
         with (
             patch("builtins.input", side_effect=["{[C]01052089}", "{[C]01052089}", ""]),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
+            patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
             patch("FoodPantryListGenerator.append_record",
                   side_effect=lambda *a: mock_appends.append(a)),
             patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
-                  side_effect=dynamic_flagged),
+                  side_effect=[set(), {"C1052089"}]),
             patch("FoodPantryListGenerator.read_admin_contact", return_value="Admin — 555"),
+            patch("os.path.getmtime", side_effect=[1000.0, 1000.0, 2000.0]),
             patch("builtins.print", side_effect=capture_print),
         ):
             app.main()
@@ -257,28 +254,108 @@ class TestMidSessionFileUpdate:
         If a case number is removed from InvNmbrs.csv during a session,
         the next scan of that barcode should be logged normally.
         """
-        read_call_count = [0]
-
-        def dynamic_flagged(*_):
-            read_call_count[0] += 1
-            # First scan: flagged; second scan: removed from file
-            return {"C1052089"} if read_call_count[0] == 1 else set()
-
         mock_appends = []
         with (
             patch("builtins.input", side_effect=["{[C]01052089}", "{[C]01052089}", ""]),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
+            patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
             patch("FoodPantryListGenerator.append_record",
                   side_effect=lambda *a: mock_appends.append(a)),
             patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
-                  side_effect=dynamic_flagged),
+                  side_effect=[{"C1052089"}, set()]),
             patch("FoodPantryListGenerator.read_admin_contact", return_value="Admin — 555"),
+            patch("os.path.getmtime", side_effect=[1000.0, 1000.0, 2000.0]),
             patch("builtins.print"),
         ):
             app.main()
 
         assert len(mock_appends) == 1          # second scan written after removal
         assert mock_appends[0][1] == "C1052089"
+
+
+# ---------------------------------------------------------------------------
+# Consecutive duplicate detection
+# ---------------------------------------------------------------------------
+
+class TestConsecutiveDuplicate:
+    def test_consecutive_duplicate_not_written_to_csv(self):
+        """Second consecutive scan of the same barcode is suppressed."""
+        mock_append, _, _ = _run_main(
+            inputs=["{[C]01052089}", "{[C]01052089}", ""],
+            flagged_set=set(),
+            contact="Jane Smith — 555-0100",
+        )
+        assert mock_append.call_count == 1
+
+    def test_consecutive_duplicate_not_written_to_flagged_log(self):
+        """Consecutive duplicates are suppressed without touching the flagged log."""
+        _, mock_flagged_append, _ = _run_main(
+            inputs=["{[C]01052089}", "{[C]01052089}", ""],
+            flagged_set=set(),
+            contact=None,
+        )
+        mock_flagged_append.assert_not_called()
+
+    def test_consecutive_duplicate_shows_duplicate_banner(self):
+        """The DUPLICATE banner is displayed for a consecutive re-scan."""
+        _, _, printed = _run_main(
+            inputs=["{[C]01052089}", "{[C]01052089}", ""],
+            flagged_set=set(),
+            contact="Jane Smith — 555-0100",
+        )
+        assert any("DUPLICATE" in line for line in printed)
+
+    def test_clean_scan_after_duplicate_is_written(self):
+        """After a duplicate is suppressed, the next distinct scan is written."""
+        mock_append, _, _ = _run_main(
+            inputs=["{[C]01052089}", "{[C]01052089}", "{[C]01052090}", ""],
+            flagged_set=set(),
+            contact=None,
+        )
+        assert mock_append.call_count == 2
+
+    def test_seeded_last_scanned_catches_duplicate_on_first_scan(self):
+        """If last_scanned is seeded from the file, the first scan can be a duplicate."""
+        mock_append, _, printed = _run_main(
+            inputs=["{[C]01052089}", ""],
+            flagged_set=set(),
+            contact="Jane — 555",
+            last_scanned="C1052089",
+        )
+        mock_append.assert_not_called()
+        assert any("DUPLICATE" in line for line in printed)
+
+    def test_different_barcodes_not_treated_as_duplicate(self):
+        """Two different barcodes scanned consecutively are both written."""
+        mock_append, _, printed = _run_main(
+            inputs=["{[C]01052089}", "{[C]01052090}", ""],
+            flagged_set=set(),
+            contact=None,
+        )
+        assert mock_append.call_count == 2
+        assert not any("DUPLICATE" in line for line in printed)
+
+    def test_third_scan_of_same_barcode_is_also_duplicate(self):
+        """Each re-scan after the first is independently suppressed."""
+        mock_append, _, _ = _run_main(
+            inputs=["{[C]01052089}", "{[C]01052089}", "{[C]01052089}", ""],
+            flagged_set=set(),
+            contact=None,
+        )
+        assert mock_append.call_count == 1
+
+    def test_flagged_scan_checked_before_duplicate(self):
+        """A flagged barcode shows FLAGGED even if it matches last_scanned."""
+        mock_append, mock_flagged_append, printed = _run_main(
+            inputs=["{[C]01052089}", ""],
+            flagged_set={"C1052089"},
+            contact="Admin — 555",
+            last_scanned="C1052089",
+        )
+        mock_append.assert_not_called()
+        mock_flagged_append.assert_called_once()
+        assert any("FLAGGED" in line for line in printed)
+        assert not any("DUPLICATE" in line for line in printed)

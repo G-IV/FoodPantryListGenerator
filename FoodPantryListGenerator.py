@@ -29,9 +29,11 @@ from food_pantry.csv_writer import (
     build_flagged_filename,
     build_output_filename,
     count_existing_records,
+    read_last_case_number,
 )
 from food_pantry.invalid_numbers import (
     ensure_invnmbrs_exists,
+    format_duplicate_banner,
     format_flag_banner,
     read_admin_contact,
     read_invalid_numbers,
@@ -58,6 +60,9 @@ def main() -> None:
     validate_and_clean_invnmbrs(invnmbrs_path, error_log_path)
 
     record_count = count_existing_records(filepath)
+    last_scanned = read_last_case_number(filepath, today)
+    flagged_set = read_invalid_numbers(invnmbrs_path)
+    flagged_mtime = os.path.getmtime(invnmbrs_path)
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
@@ -80,8 +85,13 @@ def main() -> None:
             # Blank input — volunteer pressed Enter to exit.
             break
 
-        flagged = read_invalid_numbers(invnmbrs_path)
-        if case_number in flagged:
+        # Refresh the flagged set only if InvNmbrs.csv has changed on disk.
+        current_mtime = os.path.getmtime(invnmbrs_path)
+        if current_mtime != flagged_mtime:
+            flagged_set = read_invalid_numbers(invnmbrs_path)
+            flagged_mtime = current_mtime
+
+        if case_number in flagged_set:
             contact = read_admin_contact(invnmbrs_path)
             now = datetime.datetime.now()
             append_flagged_record(flagged_filepath, case_number, now)
@@ -89,9 +99,16 @@ def main() -> None:
                 print(line)
             continue
 
+        if case_number == last_scanned:
+            contact = read_admin_contact(invnmbrs_path)
+            for line in format_duplicate_banner(case_number, contact):
+                print(line)
+            continue
+
         record_count += 1
         now = datetime.datetime.now()
         append_record(filepath, case_number, now)
+        last_scanned = case_number
 
     print()
     print(f"Barcodes saved to: {filename}")

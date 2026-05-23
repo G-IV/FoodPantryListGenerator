@@ -12,6 +12,7 @@ import os
 import pytest
 from food_pantry.invalid_numbers import (
     ensure_invnmbrs_exists,
+    format_duplicate_banner,
     format_flag_banner,
     read_admin_contact,
     read_invalid_numbers,
@@ -272,3 +273,35 @@ class TestValidateAndClean:
             lines = fh.readlines()
         assert "Jane Smith" in lines[0]
         assert lines[1].strip() == "Case #"
+
+
+# ---------------------------------------------------------------------------
+# format_duplicate_banner — consecutive duplicate alert
+# ---------------------------------------------------------------------------
+
+class TestFormatDuplicateBanner:
+    def test_contains_case_number(self):
+        """The banner names the specific case number that was scanned twice."""
+        lines = format_duplicate_banner("C1052089", None)
+        assert any("C1052089" in line for line in lines)
+
+    def test_contains_duplicate_keyword(self):
+        """The banner uses the word DUPLICATE so it is distinguishable from FLAGGED."""
+        lines = format_duplicate_banner("C1052089", None)
+        assert any("DUPLICATE" in line for line in lines)
+
+    def test_contains_contact_when_provided(self):
+        """The administrator contact is shown when available."""
+        lines = format_duplicate_banner("C1052089", "Jane Smith — 555-0100")
+        assert any("Jane Smith — 555-0100" in line for line in lines)
+
+    def test_no_contact_line_when_contact_is_none(self):
+        """If contact is None, no Contact line is added."""
+        lines = format_duplicate_banner("C1052089", None)
+        assert not any("Contact" in line for line in lines)
+
+    def test_uses_red_background_ansi(self):
+        """The duplicate banner uses ANSI escape codes like the flagged banner."""
+        lines = format_duplicate_banner("C1052089", "Jane — 555")
+        colored = [l for l in lines if "DUPLICATE" in l or "Contact" in l]
+        assert all("\033[" in line for line in colored)
