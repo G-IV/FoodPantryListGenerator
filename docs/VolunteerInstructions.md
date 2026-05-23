@@ -65,17 +65,6 @@ If you have downtime, sort the cards from the basket by color/letter and group t
 
 ---
 
-## Troubleshooting: Double Screen Problem
-
-If you notice two List Generator windows open at the same time:
-
-1. Close **each window** by pressing **Enter** in each one.
-2. Reopen the List Generator by double-clicking its icon.
-
-You will not lose any data. This typically happens when the computer goes idle and the screen goes dark — when you wake it up, the taskbar icon for List Generator may not be visible, so the icon gets double-clicked again. If you do see the icon in the taskbar at the bottom of the screen, **click it** to bring the existing window back up rather than opening a new one.
-
----
-
 ## After 11:30am
 
 This station, along with Station 1 in the foyer, will not close down until **12:10pm**. Station 1 will have reduced paperwork after 11:30am to expedite late arrivals. This will **not** affect your standard processing at this station.
