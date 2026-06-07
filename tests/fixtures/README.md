@@ -46,8 +46,6 @@ cases as the expected "happy path" in tests.
 | C1700001–C1700002 | Multiple in scanned only |
 | C1800001–C1800002 | Multiple in Oasis only |
 
-Row 1 (contact info): `Pantry Admin,555-0100`
-
 ---
 
 ## `test_barcodes.html` — physical scanner test sheet

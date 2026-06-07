@@ -22,7 +22,7 @@ from unittest.mock import call, patch, MagicMock
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=None,
+def _run_main(inputs, flagged_set, existing_records=0, last_scanned=None,
               today_scanned_set=None):
     """
     Run main() with fully mocked I/O.
@@ -54,7 +54,6 @@ def _run_main(inputs, flagged_set, contact, existing_records=0, last_scanned=Non
         patch("FoodPantryListGenerator.append_already_served_record") as mock_already_served_append,
         patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
         patch("FoodPantryListGenerator.read_invalid_numbers", return_value=flagged_set),
-        patch("FoodPantryListGenerator.read_admin_contact", return_value=contact),
         patch("os.path.isfile", return_value=True),
         patch("os.path.getmtime", return_value=1000.0),
         patch("builtins.print", side_effect=capture_print),
@@ -74,7 +73,6 @@ class TestUnflaggedScan:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         mock_append.assert_called_once()
         _, case_number, _ = mock_append.call_args[0]
@@ -85,7 +83,6 @@ class TestUnflaggedScan:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert mock_append.call_count == 2
 
@@ -94,7 +91,6 @@ class TestUnflaggedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert not any("FLAGGED" in line for line in printed)
 
@@ -109,7 +105,6 @@ class TestFlaggedScan:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Jane Smith — 555-0100",
         )
         mock_append.assert_not_called()
 
@@ -118,7 +113,6 @@ class TestFlaggedScan:
         _, mock_flagged_append, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Jane Smith — 555-0100",
         )
         mock_flagged_append.assert_called_once()
         _, case_number, _ = mock_flagged_append.call_args[0]
@@ -129,7 +123,6 @@ class TestFlaggedScan:
         _, mock_flagged_append, _, _ = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
-            contact=None,
         )
         mock_flagged_append.assert_not_called()
 
@@ -138,7 +131,6 @@ class TestFlaggedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Jane Smith — 555-0100",
         )
         assert any("escort customer to Oasis administrator" in line for line in printed)
 
@@ -147,25 +139,22 @@ class TestFlaggedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Jane Smith — 555-0100",
         )
         assert any("escort customer to Oasis administrator" in line for line in printed)
 
-    def test_banner_contains_contact_info(self):
-        """Contact info is not shown in the flagged banner — escort process replaces direct contact."""
+    def test_banner_no_contact_in_flagged_banner(self):
+        """No contact info is shown in the flagged banner."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Jane Smith — 555-0100",
         )
-        assert not any("Jane Smith" in line for line in printed)
+        assert not any("Contact" in line for line in printed)
 
-    def test_banner_no_contact_does_not_crash(self):
-        """If InvNmbrs.csv has no contact info, the banner still shows."""
+    def test_banner_escort_message_shown(self):
+        """Flagged banner shows the escort message."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact=None,
         )
         assert any("escort customer to Oasis administrator" in line for line in printed)
 
@@ -174,7 +163,6 @@ class TestFlaggedScan:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set={"C1052089"},
-            contact="Jane Smith — 555-0100",
         )
         # Only the second (unflagged) barcode should be written
         assert mock_append.call_count == 1
@@ -209,7 +197,6 @@ class TestRecordCounter:
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
                   return_value={"C1052089"}),
-            patch("FoodPantryListGenerator.read_admin_contact", return_value="Admin — 555"),
             patch("os.path.isfile", return_value=True),
             patch("os.path.getmtime", return_value=1000.0),
             patch("builtins.print"),
@@ -252,7 +239,6 @@ class TestMidSessionFileUpdate:
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
                   side_effect=[set(), {"C1052089"}]),
-            patch("FoodPantryListGenerator.read_admin_contact", return_value="Admin — 555"),
             patch("os.path.isfile", return_value=True),
             patch("os.path.getmtime", side_effect=[1000.0, 1000.0, 2000.0]),
             patch("builtins.print", side_effect=capture_print),
@@ -279,7 +265,6 @@ class TestMidSessionFileUpdate:
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
                   side_effect=[{"C1052089"}, set()]),
-            patch("FoodPantryListGenerator.read_admin_contact", return_value="Admin — 555"),
             patch("os.path.isfile", return_value=True),
             patch("os.path.getmtime", side_effect=[1000.0, 1000.0, 2000.0]),
             patch("builtins.print"),
@@ -300,7 +285,6 @@ class TestConsecutiveDuplicate:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         assert mock_append.call_count == 1
 
@@ -309,7 +293,6 @@ class TestConsecutiveDuplicate:
         _, mock_flagged_append, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact=None,
         )
         mock_flagged_append.assert_not_called()
 
@@ -318,7 +301,6 @@ class TestConsecutiveDuplicate:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         assert any("proceed to next customer" in line for line in printed)
 
@@ -327,7 +309,6 @@ class TestConsecutiveDuplicate:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert mock_append.call_count == 2
 
@@ -336,7 +317,6 @@ class TestConsecutiveDuplicate:
         mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane — 555",
             last_scanned="C1052089",
         )
         mock_append.assert_not_called()
@@ -347,7 +327,6 @@ class TestConsecutiveDuplicate:
         mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert mock_append.call_count == 2
         assert not any("DUPLICATE" in line for line in printed)
@@ -357,7 +336,6 @@ class TestConsecutiveDuplicate:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert mock_append.call_count == 1
 
@@ -366,7 +344,6 @@ class TestConsecutiveDuplicate:
         mock_append, mock_flagged_append, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Admin — 555",
             last_scanned="C1052089",
         )
         mock_append.assert_not_called()
@@ -386,7 +363,6 @@ class TestAlreadyServedScan:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         assert mock_append.call_count == 2
 
@@ -395,7 +371,6 @@ class TestAlreadyServedScan:
         _, _, mock_already_served_append, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact=None,
         )
         mock_already_served_append.assert_not_called()
 
@@ -404,7 +379,6 @@ class TestAlreadyServedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         assert not any("ALREADY SERVED" in line for line in printed)
 
@@ -413,7 +387,6 @@ class TestAlreadyServedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         # No output line should mention C1052089 after the initial clean scan
         # (the clean scan itself does not print the case number, only the prompt does).
@@ -424,7 +397,6 @@ class TestAlreadyServedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane Smith — 555-0100",
         )
         # Contact info should not appear in any re-scan output.
         assert not any("Jane Smith" in line and "ALREADY SERVED" in line for line in printed)
@@ -434,7 +406,6 @@ class TestAlreadyServedScan:
         mock_append, _, _, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", "{[C]01052091}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert mock_append.call_count == 3
         written = [call_args[0][1] for call_args in mock_append.call_args_list]
@@ -445,7 +416,6 @@ class TestAlreadyServedScan:
         mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
-            contact="Jane — 555",
             last_scanned=None,
             today_scanned_set={"C1052089"},
         )
@@ -457,7 +427,6 @@ class TestAlreadyServedScan:
         mock_append, mock_flagged_append, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
-            contact="Admin — 555",
             today_scanned_set={"C1052089"},
         )
         mock_append.assert_not_called()
@@ -470,7 +439,6 @@ class TestAlreadyServedScan:
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
-            contact=None,
         )
         assert not any("ALREADY SERVED" in line for line in printed)
         assert not any("proceed to next customer" in line for line in printed)

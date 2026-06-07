@@ -10,14 +10,13 @@ by the administrator between scans take effect on the next scan after saving.
 
 File format
 -----------
-Row 1: Administrator contact info — two comma-separated fields: Name,Phone
-Row 2: Column header (ignored — typically "Case #")
-Row 3+: One flagged case number per row (the C-prefixed normalized form,
+Row 1: Column header (ignored — typically "Case #")
+Row 2+: One flagged case number per row (the C-prefixed normalized form,
         e.g. C1052089). Trailing commas and surrounding whitespace are
         tolerated.
 
 If the file does not exist the application behaves exactly as it did
-before this feature was added — reads return empty/None and all scans are
+before this feature was added — reads return empty sets and all scans are
 logged normally.
 
 Where to put InvNmbrs.csv
@@ -31,7 +30,6 @@ FoodPantryListGenerator.py).
 import datetime
 import os
 import re
-from typing import Optional
 
 
 _RED = "\033[1;97;41m"
@@ -44,10 +42,11 @@ def ensure_invnmbrs_exists(path: str) -> bool:
     """
     Create InvNmbrs.csv with a skeleton structure if it does not exist.
 
-    The skeleton contains the two header rows (a placeholder contact row and the
-    'Case #' column header) with no flagged case numbers.  The administrator
-    can open the file in Notepad to replace the placeholder name and phone
-    number with the real contact details, then add case numbers below.
+    Note: this function is no longer called by the application (issue #27).
+    It is retained here for convenience if manual bootstrapping is ever needed.
+
+    The skeleton contains a single 'Case #' header row with no flagged case
+    numbers.
 
     Args:
         path: Absolute or relative path to InvNmbrs.csv.
@@ -58,7 +57,7 @@ def ensure_invnmbrs_exists(path: str) -> bool:
     if os.path.isfile(path):
         return False
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        fh.write("Name,(xxx) xxx-xxxx\r\nCase #\r\n")
+        fh.write("Case #\r\n")
     return True
 
 
@@ -66,8 +65,8 @@ def validate_and_clean_invnmbrs(path: str, error_log_path: str) -> list:
     """
     Validate case number rows in InvNmbrs.csv and remove any that are malformed.
 
-    Rows 1 and 2 (contact info and column header) are always kept as-is.
-    Rows 3+ must be a case number in the form C followed by digits (e.g. C1052089).
+    Row 1 (column header) is always kept as-is.
+    Rows 2+ must be a case number in the form C followed by digits (e.g. C1052089).
 
     - Blank rows are silently removed without logging.
     - Non-blank rows that do not match the case number format are removed from
@@ -90,13 +89,13 @@ def validate_and_clean_invnmbrs(path: str, error_log_path: str) -> list:
     with open(path, "r", newline="", encoding="utf-8") as fh:
         lines = fh.readlines()
 
-    header_rows = lines[:2]
-    case_rows = lines[2:]
+    header_rows = lines[:1]
+    case_rows = lines[1:]
 
     good_rows: list = []
     bad_rows: list = []  # list of (1-based row number, stripped value)
 
-    for i, line in enumerate(case_rows, start=3):
+    for i, line in enumerate(case_rows, start=2):
         stripped = line.strip().rstrip(",").strip()
         if not stripped:
             continue  # blank row — drop silently
@@ -123,9 +122,8 @@ def read_invalid_numbers(path: str) -> set:
     """
     Return the set of flagged case numbers from InvNmbrs.csv.
 
-    Rows 1 and 2 are always skipped (contact info and column header).
-    Returns an empty set if the file is absent or contains no case number
-    rows.
+    Row 1 (column header) is always skipped.
+    Returns an empty set if the file is absent or contains no case number rows.
 
     Args:
         path: Absolute or relative path to InvNmbrs.csv.
@@ -139,45 +137,15 @@ def read_invalid_numbers(path: str) -> set:
     flagged: set = set()
     with open(path, newline="", encoding="utf-8") as fh:
         for i, line in enumerate(fh):
-            if i < 2:
-                continue  # skip contact info row and column header row
+            if i < 1:
+                continue  # skip column header row
             case = line.strip().rstrip(",").strip()
             if case:
                 flagged.add(case)
     return flagged
 
 
-def read_admin_contact(path: str) -> Optional[str]:
-    """
-    Return the administrator contact string from row 1 of InvNmbrs.csv.
-
-    Row 1 is expected to be "Name,Phone". The two fields are joined with
-    " — " for display (e.g. "Jane Smith — 555-0100").
-
-    Returns None if the file is absent or row 1 is blank.
-
-    Args:
-        path: Absolute or relative path to InvNmbrs.csv.
-
-    Returns:
-        A formatted contact string, or None.
-    """
-    if not os.path.isfile(path):
-        return None
-
-    with open(path, newline="", encoding="utf-8") as fh:
-        first_line = fh.readline().rstrip("\r\n").strip()
-
-    if not first_line:
-        return None
-
-    parts = first_line.split(",", 1)
-    if len(parts) == 2:
-        return f"{parts[0].strip()} — {parts[1].strip()}"
-    return first_line
-
-
-def format_flag_banner(case_number: str, contact: Optional[str]) -> list:
+def format_flag_banner(case_number: str) -> list:
     """
     Return the lines to print when a flagged barcode is scanned.
 
@@ -185,13 +153,8 @@ def format_flag_banner(case_number: str, contact: Optional[str]) -> list:
     text.  This renders correctly on Windows 10 / Windows 11 consoles and
     on macOS/Linux terminals.  No third-party library is required.
 
-    The contact parameter is accepted for API compatibility but is not used —
-    the volunteer is directed to have the customer escorted to the Oasis
-    administrator via a cart guide rather than contacting the admin directly.
-
     Args:
         case_number: The normalized case number that was flagged.
-        contact: Accepted for API compatibility; not used in this banner.
 
     Returns:
         A list of strings to be printed, one per line.
@@ -203,18 +166,15 @@ def format_flag_banner(case_number: str, contact: Optional[str]) -> list:
     ]
 
 
-def format_duplicate_banner(case_number: str, contact: Optional[str]) -> list:
+def format_duplicate_banner(case_number: str) -> list:
     """
     Return the lines to print when a consecutive duplicate barcode is scanned.
 
     Displays a calm green reassurance message so the volunteer knows nothing
-    went wrong and can continue processing the next customer.  The contact
-    parameter is accepted for API compatibility but is not included in the
-    output — a consecutive duplicate is not an alert condition.
+    went wrong and can continue processing the next customer.
 
     Args:
         case_number: The normalized case number that was scanned twice in a row.
-        contact: Accepted for API compatibility; not used in this banner.
 
     Returns:
         A list of strings to be printed, one per line.
@@ -226,29 +186,22 @@ def format_duplicate_banner(case_number: str, contact: Optional[str]) -> list:
     ]
 
 
-def format_already_served_banner(case_number: str, contact: Optional[str]) -> list:
+def format_already_served_banner(case_number: str) -> list:
     """
     Return the lines to print when a barcode is re-scanned that was already
     recorded earlier in the current session (non-consecutive duplicate).
 
     Uses the same red background and visual treatment as format_flag_banner.
-    The volunteer sees the same "DO NOT ISSUE" style alert; the only difference
-    is the body line explaining why — this person was already served today
-    rather than being flagged by an administrator.
 
     Args:
         case_number: The normalized case number that was scanned again.
-        contact: The formatted administrator contact string, or None.
 
     Returns:
         A list of strings to be printed, one per line.
     """
-    lines = [
+    return [
         "",
         f"{_RED}  ALREADY SERVED — DO NOT ISSUE: {case_number}  {_RESET}",
         f"{_RED}  This barcode has been serviced earlier today  {_RESET}",
+        "",
     ]
-    if contact:
-        lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")
-    lines.append("")
-    return lines
