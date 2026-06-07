@@ -313,14 +313,14 @@ class TestConsecutiveDuplicate:
         )
         mock_flagged_append.assert_not_called()
 
-    def test_consecutive_duplicate_shows_duplicate_banner(self):
-        """The DUPLICATE banner is displayed for a consecutive re-scan."""
+    def test_consecutive_duplicate_shows_reassurance_message(self):
+        """A consecutive re-scan shows a calm reassurance message, not a red alert."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
         )
-        assert any("DUPLICATE" in line for line in printed)
+        assert any("proceed to next customer" in line for line in printed)
 
     def test_clean_scan_after_duplicate_is_written(self):
         """After a duplicate is suppressed, the next distinct scan is written."""
@@ -340,7 +340,7 @@ class TestConsecutiveDuplicate:
             last_scanned="C1052089",
         )
         mock_append.assert_not_called()
-        assert any("DUPLICATE" in line for line in printed)
+        assert any("proceed to next customer" in line for line in printed)
 
     def test_different_barcodes_not_treated_as_duplicate(self):
         """Two different barcodes scanned consecutively are both written."""
@@ -390,43 +390,44 @@ class TestAlreadyServedScan:
         )
         assert mock_append.call_count == 2
 
-    def test_barcode_scanned_earlier_written_to_already_served_log(self):
-        """Re-scanning an earlier barcode is logged to the already-served log, not the flagged log."""
+    def test_barcode_scanned_earlier_not_written_to_already_served_log(self):
+        """Non-consecutive re-scans are silently ignored — not logged to the already-served file."""
         _, _, mock_already_served_append, _ = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
         )
-        mock_already_served_append.assert_called_once()
-        _, case_number, _ = mock_already_served_append.call_args[0]
-        assert case_number == "C1052089"
+        mock_already_served_append.assert_not_called()
 
-    def test_already_served_banner_is_displayed(self):
-        """The ALREADY SERVED banner is printed when a prior-session barcode is re-scanned."""
+    def test_already_served_silently_ignored_no_banner(self):
+        """A non-consecutive re-scan produces no banner output — it is silently skipped."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
         )
-        assert any("ALREADY SERVED" in line for line in printed)
+        assert not any("ALREADY SERVED" in line for line in printed)
 
-    def test_already_served_banner_contains_case_number(self):
-        """The ALREADY SERVED banner includes the re-scanned case number."""
+    def test_already_served_silently_ignored_no_case_number_output(self):
+        """A non-consecutive re-scan produces no output referencing the re-scanned case number."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
         )
-        assert any("C1052089" in line and "ALREADY SERVED" in line for line in printed)
+        # No output line should mention C1052089 after the initial clean scan
+        # (the clean scan itself does not print the case number, only the prompt does).
+        assert not any("ALREADY SERVED" in line and "C1052089" in line for line in printed)
 
-    def test_already_served_banner_contains_contact_info(self):
-        """The ALREADY SERVED banner includes the administrator contact string."""
+    def test_already_served_silently_ignored_no_contact_output(self):
+        """A non-consecutive re-scan does not display contact info — no banner is shown."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact="Jane Smith — 555-0100",
         )
-        assert any("Jane Smith — 555-0100" in line for line in printed)
+        # Contact info should not appear in any re-scan output.
+        assert not any("Jane Smith" in line and "ALREADY SERVED" in line for line in printed)
 
     def test_scanning_continues_after_already_served(self):
         """After the ALREADY SERVED alert the loop continues and records new barcodes."""
@@ -440,8 +441,7 @@ class TestAlreadyServedScan:
         assert "C1052091" in written
 
     def test_seeded_today_set_catches_already_served_on_first_scan(self):
-        """A case number in today_scanned_set at startup triggers ALREADY SERVED
-        on the very first scan of that barcode in this run."""
+        """A case number in today_scanned_set at startup is silently skipped on the first scan."""
         mock_append, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set=set(),
@@ -450,7 +450,7 @@ class TestAlreadyServedScan:
             today_scanned_set={"C1052089"},
         )
         mock_append.assert_not_called()
-        assert any("ALREADY SERVED" in line for line in printed)
+        assert not any("ALREADY SERVED" in line for line in printed)
 
     def test_flagged_checked_before_already_served(self):
         """A barcode that is both flagged and in today's set shows FLAGGED, not ALREADY SERVED."""
@@ -466,11 +466,11 @@ class TestAlreadyServedScan:
         assert not any("ALREADY SERVED" in line for line in printed)
 
     def test_already_served_does_not_show_duplicate_banner(self):
-        """A non-consecutive re-scan shows ALREADY SERVED, not the DUPLICATE banner."""
+        """A non-consecutive re-scan produces no output — neither the ALREADY SERVED nor the duplicate reassurance message."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""],
             flagged_set=set(),
             contact=None,
         )
-        assert any("ALREADY SERVED" in line for line in printed)
-        assert not any("DUPLICATE" in line for line in printed)
+        assert not any("ALREADY SERVED" in line for line in printed)
+        assert not any("proceed to next customer" in line for line in printed)

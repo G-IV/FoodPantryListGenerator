@@ -35,6 +35,7 @@ from typing import Optional
 
 
 _RED = "\033[1;97;41m"
+_GREEN = "\033[1;32m"
 _RESET = "\033[0m"
 _CASE_NUMBER_RE = re.compile(r"^C\d+$")
 
@@ -206,25 +207,23 @@ def format_duplicate_banner(case_number: str, contact: Optional[str]) -> list:
     """
     Return the lines to print when a consecutive duplicate barcode is scanned.
 
-    Uses the same visual treatment as format_flag_banner (red background,
-    white bold text).  The volunteer is shown the same contact information
-    so they can reach the administrator if the situation requires it.
+    Displays a calm green reassurance message so the volunteer knows nothing
+    went wrong and can continue processing the next customer.  The contact
+    parameter is accepted for API compatibility but is not included in the
+    output — a consecutive duplicate is not an alert condition.
 
     Args:
         case_number: The normalized case number that was scanned twice in a row.
-        contact: The formatted administrator contact string, or None.
+        contact: Accepted for API compatibility; not used in this banner.
 
     Returns:
         A list of strings to be printed, one per line.
     """
-    lines = [
+    return [
         "",
-        f"{_RED}  DUPLICATE — DO NOT ISSUE: {case_number}  {_RESET}",
+        f"{_GREEN}  Duplicate scan — proceed to next customer  {_RESET}",
+        "",
     ]
-    if contact:
-        lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")
-    lines.append("")
-    return lines
 
 
 def format_already_served_banner(case_number: str, contact: Optional[str]) -> list:

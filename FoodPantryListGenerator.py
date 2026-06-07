@@ -122,12 +122,14 @@ def _run_session() -> None:
             continue
 
         # Check 3: scanned earlier this session (not the immediately prior scan).
+        # Non-consecutive re-scans are silently ignored per issue #24. Detection
+        # code is left in place so this can be re-enabled in the future.
         if case_number in today_scanned_set and case_number != last_scanned:
-            contact = read_admin_contact(invnmbrs_path)
-            now = datetime.datetime.now()
-            append_already_served_record(already_served_filepath, case_number, now)
-            for line in format_already_served_banner(case_number, contact):
-                print(line)
+            # contact = read_admin_contact(invnmbrs_path)
+            # now = datetime.datetime.now()
+            # append_already_served_record(already_served_filepath, case_number, now)
+            # for line in format_already_served_banner(case_number, contact):
+            #     print(line)
             continue
 
         # Check 4: same barcode as the very last scan (consecutive duplicate).
@@ -144,9 +146,12 @@ def _run_session() -> None:
                     print(line)
                 continue
             if case_number in today_scanned_set and case_number != last_scanned:
-                contact = read_admin_contact(invnmbrs_path)
-                for line in format_already_served_banner(case_number, contact):
-                    print(line)
+                # Logically unreachable (case_number == last_scanned here), but
+                # kept in place so the re-check structure is preserved. Silenced
+                # per issue #24 alongside Check 3 above.
+                # contact = read_admin_contact(invnmbrs_path)
+                # for line in format_already_served_banner(case_number, contact):
+                #     print(line)
                 continue
             # Both re-checks passed — genuine consecutive duplicate scan.
             contact = read_admin_contact(invnmbrs_path)
