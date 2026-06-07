@@ -122,8 +122,7 @@ The task specific to the List Generator is: **maintaining `InvNmbrs.csv`**, a fi
 When a volunteer scans a barcode that appears in `InvNmbrs.csv`, the screen immediately displays a red banner like this:
 
 ```
-  FLAGGED — DO NOT ISSUE: C1052089
-  Contact administrator: Pantry Admin — (555) 867-5309
+  This barcode has been flagged, please ask a cart guide to escort customer to Oasis administrator
 ```
 
 The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the scanned output file, but it **is** recorded in a separate flagged barcode log for your review (see [Reviewing the Flagged Barcode Log](#reviewing-the-flagged-barcode-log) below).
