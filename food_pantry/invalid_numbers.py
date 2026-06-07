@@ -185,21 +185,22 @@ def format_flag_banner(case_number: str, contact: Optional[str]) -> list:
     text.  This renders correctly on Windows 10 / Windows 11 consoles and
     on macOS/Linux terminals.  No third-party library is required.
 
+    The contact parameter is accepted for API compatibility but is not used —
+    the volunteer is directed to have the customer escorted to the Oasis
+    administrator via a cart guide rather than contacting the admin directly.
+
     Args:
         case_number: The normalized case number that was flagged.
-        contact: The formatted administrator contact string, or None.
+        contact: Accepted for API compatibility; not used in this banner.
 
     Returns:
         A list of strings to be printed, one per line.
     """
-    lines = [
+    return [
         "",
         f"{_RED}  This barcode has been flagged, please ask a cart guide to escort customer to Oasis administrator  {_RESET}",
+        "",
     ]
-    if contact:
-        lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")
-    lines.append("")
-    return lines
 
 
 def format_duplicate_banner(case_number: str, contact: Optional[str]) -> list:

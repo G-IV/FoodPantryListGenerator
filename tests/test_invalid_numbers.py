@@ -137,10 +137,10 @@ class TestFormatFlagBanner:
         assert "escort customer to Oasis administrator" in combined
 
     def test_contact_in_banner(self):
-        """The contact string appears in the banner when provided."""
+        """Contact string is accepted but not shown — escort process replaces direct contact."""
         lines = format_flag_banner("C1052089", "Jane Smith — 555-1234")
         combined = "\n".join(lines)
-        assert "Jane Smith — 555-1234" in combined
+        assert "Jane Smith" not in combined
 
     def test_no_contact_still_shows_message(self):
         """When contact is None, the flagged message is still present."""
@@ -149,8 +149,13 @@ class TestFormatFlagBanner:
         assert "escort customer to Oasis administrator" in combined
 
     def test_no_contact_omits_contact_line(self):
-        """When contact is None, no contact line appears in the output."""
+        """No contact line appears regardless of whether contact is provided."""
         lines = format_flag_banner("C1052089", None)
+        assert not any("Contact" in line for line in lines)
+
+    def test_no_contact_line_even_when_contact_provided(self):
+        """Contact info is never shown in the flagged banner."""
+        lines = format_flag_banner("C1052089", "Jane Smith — 555-1234")
         assert not any("Contact" in line for line in lines)
 
     def test_body_explains_flagged_reason(self):

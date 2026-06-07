@@ -152,13 +152,13 @@ class TestFlaggedScan:
         assert any("escort customer to Oasis administrator" in line for line in printed)
 
     def test_banner_contains_contact_info(self):
-        """The banner includes the administrator contact from row 1."""
+        """Contact info is not shown in the flagged banner — escort process replaces direct contact."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
         )
-        assert any("Jane Smith — 555-0100" in line for line in printed)
+        assert not any("Jane Smith" in line for line in printed)
 
     def test_banner_no_contact_does_not_crash(self):
         """If InvNmbrs.csv has no contact info, the banner still shows."""
