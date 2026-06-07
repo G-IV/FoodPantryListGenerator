@@ -37,7 +37,6 @@ from food_pantry.csv_writer import (
     read_last_case_number,
 )
 from food_pantry.invalid_numbers import (
-    ensure_invnmbrs_exists,
     format_already_served_banner,
     format_duplicate_banner,
     format_flag_banner,
@@ -76,23 +75,19 @@ def _run_session() -> None:
     invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
     error_log_path = os.path.join(os.getcwd(), "InvNmbrs_errors.log")
 
-    created = ensure_invnmbrs_exists(invnmbrs_path)
-    validate_and_clean_invnmbrs(invnmbrs_path, error_log_path)
+    # Only validate/clean if the file exists; skip silently if absent.
+    if os.path.isfile(invnmbrs_path):
+        validate_and_clean_invnmbrs(invnmbrs_path, error_log_path)
 
     record_count = count_existing_records(filepath)
     last_scanned = read_last_case_number(filepath, today)
     today_scanned_set = read_existing_case_numbers(filepath, today)
     flagged_set = read_invalid_numbers(invnmbrs_path)
-    flagged_mtime = os.path.getmtime(invnmbrs_path)
+    flagged_mtime = os.path.getmtime(invnmbrs_path) if os.path.isfile(invnmbrs_path) else None
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
     print(f"Recent release:  https://github.com/G-IV/FoodPantryListGenerator/releases/latest")
-    if created:
-        print()
-        print("NOTE: InvNmbrs.csv was not found and has been created automatically.")
-        print("      Please open C:\\DoubleCheck\\InvNmbrs.csv in Notepad and update")
-        print("      line 1 with the Oasis Administrator's name and phone number.")
     print()
     print("Scan a barcode, or press Enter to exit.")
     print()
@@ -107,7 +102,8 @@ def _run_session() -> None:
             break
 
         # Refresh the flagged set only if InvNmbrs.csv has changed on disk.
-        current_mtime = os.path.getmtime(invnmbrs_path)
+        # If the file has appeared since startup, pick it up; if it's gone, clear the set.
+        current_mtime = os.path.getmtime(invnmbrs_path) if os.path.isfile(invnmbrs_path) else None
         if current_mtime != flagged_mtime:
             flagged_set = read_invalid_numbers(invnmbrs_path)
             flagged_mtime = current_mtime
