@@ -286,31 +286,26 @@ class TestValidateAndClean:
 # ---------------------------------------------------------------------------
 
 class TestFormatDuplicateBanner:
-    def test_contains_case_number(self):
-        """The banner names the specific case number that was scanned twice."""
+    def test_contains_reassurance_message(self):
+        """The banner shows a calm reassurance message telling the volunteer to proceed."""
         lines = format_duplicate_banner("C1052089", None)
-        assert any("C1052089" in line for line in lines)
+        assert any("proceed to next customer" in line for line in lines)
 
-    def test_contains_duplicate_keyword(self):
-        """The banner uses the word DUPLICATE so it is distinguishable from FLAGGED."""
+    def test_does_not_contain_do_not_issue(self):
+        """The consecutive duplicate banner is not an alert — it must not say DO NOT ISSUE."""
         lines = format_duplicate_banner("C1052089", None)
-        assert any("DUPLICATE" in line for line in lines)
+        assert not any("DO NOT ISSUE" in line for line in lines)
 
-    def test_contains_contact_when_provided(self):
-        """The administrator contact is shown when available."""
+    def test_does_not_contain_contact(self):
+        """Contact info is not shown — the duplicate reassurance message is not an alert."""
         lines = format_duplicate_banner("C1052089", "Jane Smith — 555-0100")
-        assert any("Jane Smith — 555-0100" in line for line in lines)
+        assert not any("Jane Smith" in line for line in lines)
 
-    def test_no_contact_line_when_contact_is_none(self):
-        """If contact is None, no Contact line is added."""
+    def test_uses_green_ansi(self):
+        """The duplicate banner uses green ANSI colour codes, not red."""
         lines = format_duplicate_banner("C1052089", None)
-        assert not any("Contact" in line for line in lines)
-
-    def test_uses_red_background_ansi(self):
-        """The duplicate banner uses ANSI escape codes like the flagged banner."""
-        lines = format_duplicate_banner("C1052089", "Jane — 555")
-        colored = [l for l in lines if "DUPLICATE" in l or "Contact" in l]
-        assert all("\033[" in line for line in colored)
+        colored = [l for l in lines if "proceed to next customer" in l]
+        assert all("\033[1;32m" in line for line in colored)
 
 
 # ---------------------------------------------------------------------------

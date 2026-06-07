@@ -45,9 +45,9 @@ Use the scanner to read each customer's barcode ID card or image. The screen wil
 <!-- TODO: Add screenshot of scanning prompt here -->
 <!-- ![Scanning prompt](images/scanning-prompt.png) -->
 
-> **Duplicate scans:** If you accidentally scan a barcode twice, the program will display a red **DUPLICATE** alert and skip the second scan automatically. No action is needed — the duplicate is not saved to the list.
+> **Duplicate scans:** If you accidentally scan a barcode twice in a row, the program will display a green **"Duplicate scan — proceed to next customer"** message. No action is needed — the duplicate is not saved to the list.
 
-> **Already served today:** If a barcode that was scanned **earlier in the current session** is scanned again (and it was not the immediately prior scan), the program will display a red **ALREADY SERVED TODAY** alert. Contact your administrator using the information shown on the screen. The scan is not added to the customer list.
+> **Already served today:** If a barcode that was scanned **earlier in the current session** is scanned again (and it was not the immediately prior scan), the program will silently skip the duplicate scan. No alert is shown and no action is needed.
 
 ### If a Barcode Won't Scan
 
@@ -242,15 +242,7 @@ If a flagged barcode was scanned multiple times in one session, each scan appear
 
 ### Reviewing the Already-Served Log
 
-Every time a barcode is scanned a second (or additional) time during the same pantry session — after it was already recorded earlier — the List Generator logs it separately:
-
-```
-C:\DoubleCheck\already_served20YYMMDD.csv
-```
-
-The date in the filename matches the date of the session (e.g. `already_served20260505.csv` for May 5, 2026). The format is the same as the flagged barcode log: one row per re-scan, with the case number and time.
-
-This file is created only when at least one already-served detection occurs. It is kept separate from the flagged barcode log so you can clearly tell the difference between a case number you flagged in advance and a family that may have come through the line twice.
+> **Note:** Already-served logging is currently disabled. Non-consecutive re-scans are silently skipped and are not written to a log file. This section will be updated when the feature is re-enabled.
 
 ---
 
