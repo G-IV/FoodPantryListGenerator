@@ -87,7 +87,7 @@ def _run_session() -> None:
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
-    print(f"Source code:  https://github.com/G-IV/FoodPantryListGenerator")
+    print(f"Recent release:  https://github.com/G-IV/FoodPantryListGenerator/releases/latest")
     if created:
         print()
         print("NOTE: InvNmbrs.csv was not found and has been created automatically.")
