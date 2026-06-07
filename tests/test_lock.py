@@ -122,10 +122,10 @@ class TestMainLockGuard:
             patch("FoodPantryListGenerator.read_existing_case_numbers", return_value=set()),
             patch("FoodPantryListGenerator.append_record"),
             patch("FoodPantryListGenerator.append_flagged_record"),
-            patch("FoodPantryListGenerator.ensure_invnmbrs_exists"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers", return_value=set()),
             patch("FoodPantryListGenerator.read_admin_contact", return_value=None),
+            patch("os.path.isfile", return_value=True),
             patch("os.path.getmtime", return_value=1000.0),
             patch("builtins.print"),
         ):

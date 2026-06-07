@@ -139,7 +139,9 @@ Once you have resolved the situation, see [Removing a Flagged Case Number](#remo
 C:\DoubleCheck\InvNmbrs.csv
 ```
 
-**The List Generator creates this file automatically** the first time it runs, if it does not already exist. The auto-generated file contains just the two header rows — no case numbers are flagged yet. The Oasis Administrator should open the file in Notepad and update line 1 with their name and phone number before the first pantry day. The application will display a reminder notice on screen when it creates the file.
+**The List Generator does not create this file automatically.** You must create it manually before the first pantry day. See [Setting Up the File for the First Time](#setting-up-the-file-for-the-first-time) below.
+
+If the file is absent the program runs normally — all barcodes are treated as valid and no flagging occurs.
 
 The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
 
@@ -147,9 +149,7 @@ The List Generator reads this file every time a barcode is scanned, so any chang
 
 ### Setting Up the File for the First Time
 
-When the List Generator runs for the first time, it creates `InvNmbrs.csv` automatically with a blank contact line and no flagged case numbers. You will see a notice on screen prompting you to update it.
-
-Open the file in Notepad and update line 1 with the Oasis Administrator's name and phone number:
+Before the first pantry day, you must create `InvNmbrs.csv` manually:
 
 1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
 2. Right-click `InvNmbrs.csv` and choose **Open with > Notepad**.
@@ -166,13 +166,13 @@ Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone numbe
 
 The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
 
-> **If the file was accidentally deleted**, the List Generator will recreate the blank skeleton the next time it runs. Follow the steps above again to restore your contact details.
+> **If the file was accidentally deleted**, follow the steps above again to recreate it. The List Generator will continue to run normally without it — no barcodes will be flagged until it is restored.
 
 ---
 
-### Creating the File Manually (if needed)
+### Creating the File Manually
 
-In most cases the List Generator creates `InvNmbrs.csv` automatically. If for any reason you need to create it by hand:
+To create `InvNmbrs.csv` from scratch:
 
 1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
 2. Right-click in the folder, choose **New > Text Document**.
