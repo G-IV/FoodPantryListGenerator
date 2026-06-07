@@ -131,10 +131,10 @@ class TestReadAdminContact:
 
 class TestFormatFlagBanner:
     def test_case_number_in_banner(self):
-        """The flagged case number appears in the banner output."""
+        """The flagged banner message is shown (case number is not part of the new message)."""
         lines = format_flag_banner("C1052089", "Jane Smith — 555-1234")
         combined = "\n".join(lines)
-        assert "C1052089" in combined
+        assert "escort customer to Oasis administrator" in combined
 
     def test_contact_in_banner(self):
         """The contact string appears in the banner when provided."""
@@ -142,11 +142,11 @@ class TestFormatFlagBanner:
         combined = "\n".join(lines)
         assert "Jane Smith — 555-1234" in combined
 
-    def test_no_contact_still_shows_case_number(self):
-        """When contact is None, the case number line is still present."""
+    def test_no_contact_still_shows_message(self):
+        """When contact is None, the flagged message is still present."""
         lines = format_flag_banner("C1052089", None)
         combined = "\n".join(lines)
-        assert "C1052089" in combined
+        assert "escort customer to Oasis administrator" in combined
 
     def test_no_contact_omits_contact_line(self):
         """When contact is None, no contact line appears in the output."""
@@ -154,9 +154,9 @@ class TestFormatFlagBanner:
         assert not any("Contact" in line for line in lines)
 
     def test_body_explains_flagged_reason(self):
-        """The banner body states an administrator has flagged the barcode."""
+        """The banner body tells the volunteer to ask a cart guide to escort the customer."""
         lines = format_flag_banner("C1052089", None)
-        assert any("An administrator has flagged this barcode" in line for line in lines)
+        assert any("escort customer to Oasis administrator" in line for line in lines)
 
 
 # ---------------------------------------------------------------------------

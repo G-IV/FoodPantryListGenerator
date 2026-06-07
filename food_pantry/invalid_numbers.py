@@ -194,8 +194,7 @@ def format_flag_banner(case_number: str, contact: Optional[str]) -> list:
     """
     lines = [
         "",
-        f"{_RED}  FLAGGED — DO NOT ISSUE: {case_number}  {_RESET}",
-        f"{_RED}  An administrator has flagged this barcode  {_RESET}",
+        f"{_RED}  This barcode has been flagged, please ask a cart guide to escort customer to Oasis administrator  {_RESET}",
     ]
     if contact:
         lines.append(f"{_RED}  Contact administrator: {contact}  {_RESET}")

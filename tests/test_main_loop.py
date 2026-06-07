@@ -140,16 +140,16 @@ class TestFlaggedScan:
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
         )
-        assert any("FLAGGED" in line for line in printed)
+        assert any("escort customer to Oasis administrator" in line for line in printed)
 
     def test_banner_contains_case_number(self):
-        """The banner names the specific case number that was flagged."""
+        """The flagged banner message is shown (case number is not part of the new message)."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
             contact="Jane Smith — 555-0100",
         )
-        assert any("C1052089" in line for line in printed)
+        assert any("escort customer to Oasis administrator" in line for line in printed)
 
     def test_banner_contains_contact_info(self):
         """The banner includes the administrator contact from row 1."""
@@ -167,7 +167,7 @@ class TestFlaggedScan:
             flagged_set={"C1052089"},
             contact=None,
         )
-        assert any("FLAGGED" in line for line in printed)
+        assert any("escort customer to Oasis administrator" in line for line in printed)
 
     def test_scanning_continues_after_flagged_scan(self):
         """After a flagged scan the loop continues; subsequent scans proceed."""
@@ -260,7 +260,7 @@ class TestMidSessionFileUpdate:
             app.main()
 
         assert len(mock_appends) == 1          # only first scan written
-        assert any("FLAGGED" in line for line in printed_lines)  # banner on second scan
+        assert any("escort customer to Oasis administrator" in line for line in printed_lines)  # banner on second scan
 
     def test_case_removed_from_invnmbrs_mid_session_is_logged(self):
         """
@@ -362,7 +362,7 @@ class TestConsecutiveDuplicate:
         assert mock_append.call_count == 1
 
     def test_flagged_scan_checked_before_duplicate(self):
-        """A flagged barcode shows FLAGGED even if it matches last_scanned."""
+        """A flagged barcode shows the flagged banner even if it matches last_scanned."""
         mock_append, mock_flagged_append, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
@@ -371,8 +371,8 @@ class TestConsecutiveDuplicate:
         )
         mock_append.assert_not_called()
         mock_flagged_append.assert_called_once()
-        assert any("FLAGGED" in line for line in printed)
-        assert not any("DUPLICATE" in line for line in printed)
+        assert any("escort customer to Oasis administrator" in line for line in printed)
+        assert not any("proceed to next customer" in line for line in printed)
 
 
 # ---------------------------------------------------------------------------
@@ -453,7 +453,7 @@ class TestAlreadyServedScan:
         assert not any("ALREADY SERVED" in line for line in printed)
 
     def test_flagged_checked_before_already_served(self):
-        """A barcode that is both flagged and in today's set shows FLAGGED, not ALREADY SERVED."""
+        """A barcode that is both flagged and in today's set shows the flagged banner, not ALREADY SERVED."""
         mock_append, mock_flagged_append, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
@@ -462,7 +462,7 @@ class TestAlreadyServedScan:
         )
         mock_append.assert_not_called()
         mock_flagged_append.assert_called_once()
-        assert any("FLAGGED" in line for line in printed)
+        assert any("escort customer to Oasis administrator" in line for line in printed)
         assert not any("ALREADY SERVED" in line for line in printed)
 
     def test_already_served_does_not_show_duplicate_banner(self):
