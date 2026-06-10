@@ -152,43 +152,21 @@ The List Generator reads this file every time a barcode is scanned, so any chang
 Before the first pantry day, you must create `InvNmbrs.csv` manually:
 
 1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
-2. Right-click `InvNmbrs.csv` and choose **Open with > Notepad**.
-3. Replace the first line with your name and phone number:
-
-```
-Pantry Admin,(555) 867-5309
-Case #
-```
-
-Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number. This is the contact information the volunteer will see in the red banner.
-
-4. Save the file (`Ctrl+S`).
-
-The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
-
-> **If the file was accidentally deleted**, follow the steps above again to recreate it. The List Generator will continue to run normally without it — no barcodes will be flagged until it is restored.
-
----
-
-### Creating the File Manually
-
-To create `InvNmbrs.csv` from scratch:
-
-1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
 2. Right-click in the folder, choose **New > Text Document**.
 3. Name the file `InvNmbrs.csv` — be sure to include `.csv` and remove the default `.txt` extension.
    - If you do not see file extensions in File Explorer, go to **View > Show > File name extensions** and check the box.
 4. Right-click the file and choose **Open with > Notepad**.
-5. Enter your contact information on the first line, then the column header on the second line:
+5. Type the column header on the first line:
 
 ```
-Pantry Admin,(555) 867-5309
 Case #
 ```
 
-Replace `Pantry Admin` with your name and `(555) 867-5309` with your phone number.
-
 6. Save the file (`Ctrl+S`).
+
+The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case-number) to add case numbers to it.
+
+> **If the file was accidentally deleted**, follow the steps above again to recreate it. The List Generator will continue to run normally without it — no barcodes will be flagged until it is restored.
 
 ---
 
@@ -204,7 +182,6 @@ The change takes effect on the very next scan at the List Generator station — 
 **Example file with two flagged case numbers:**
 
 ```
-Pantry Admin,(555) 867-5309
 Case #
 C1052089
 C1052090
@@ -258,10 +235,9 @@ The next time the volunteer scans that barcode, it will be logged normally.
 ### File Format Reference
 
 | Row | Content | Example |
-|-----|---------|---------|
-| 1 | Your name and phone number, separated by a comma | `Pantry Admin,(555) 867-5309` |
-| 2 | Column header — type this exactly | `Case #` |
-| 3 and below | One flagged case number per line | `C1052089` |
+|-----|---------|----------|
+| 1 | Column header — type this exactly | `Case #` |
+| 2 and below | One flagged case number per line | `C1052089` |
 
 - Case numbers must include the `C` prefix.
 - One case number per line — do not put multiple numbers on the same line.

@@ -26,7 +26,7 @@
 <body>
 
 <h1>FoodPantryListGenerator — Manual Test Checklist</h1>
-<p style="font-size:0.9rem; color:#555;">Branch: <code>feat/invalid-barcode-alert</code> &nbsp;|&nbsp; Print this page or work through it on screen.</p>
+<p style="font-size:0.9rem; color:#555;">Branch: <code>fix/27-remove-invnmbrs-autocreation</code> &nbsp;|&nbsp; Print this page or work through it on screen.</p>
 
 <div class="setup">
   <strong>Before you start — one-time setup on the Surface Pro</strong>
@@ -56,13 +56,11 @@
 <ul>
   <li><input type="checkbox">
     <div><span class="step">2.1</span> Scan any <strong>C11xxxxx</strong> barcode from the test sheet.
-      <div class="note">These are NOT in InvNmbrs.csv — they should be accepted normally.</div></div></li>
+      <div class="note">They should be accepted normally.</div></div></li>
   <li><input type="checkbox">
-    <div><span class="step">2.2</span> A green ✓ checkmark appears after the scan.</div></li>
+    <div><span class="step">2.2</span> The record count increments on the next prompt.</div></li>
   <li><input type="checkbox">
-    <div><span class="step">2.3</span> The record count increments on the next prompt.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">2.4</span> After exiting, confirm the case number appears in the output CSV at <code>C:\DoubleCheck\</code>.</div></li>
+    <div><span class="step">2.3</span> After exiting, confirm the case number appears in the output CSV at <code>C:\DoubleCheck\</code>.</div></li>
 </ul>
 
 <!-- ─────────────────────────────────────────────────────────── -->
@@ -72,18 +70,16 @@
     <div><span class="step">3.1</span> Scan any <strong>C12xxxxx</strong> barcode from the test sheet.
       <div class="note">These ARE in InvNmbrs.csv — an alert banner should appear.</div></div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.2</span> A red ✗ and an ANSI alert banner are displayed.</div></li>
+    <div><span class="step">3.2</span> The banner shows the escort message and does <strong>not</strong> contain any contact name or phone number.</div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.3</span> The banner includes the admin contact name and phone number from row 1 of InvNmbrs.csv (<em>Pantry Admin, 555-0100</em>).</div></li>
+    <div><span class="step">3.3</span> The flagged case number does <strong>not</strong> appear in the output CSV after exiting.</div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.4</span> The flagged case number does <strong>not</strong> appear in the output CSV after exiting.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">3.5</span> A file named <code>flagged_barcodes20YYMMDD.csv</code> (today's date) exists in <code>C:\DoubleCheck\</code> after the flagged scan.
+    <div><span class="step">3.4</span> A file named <code>flagged_barcodes20YYMMDD.csv</code> (today's date) exists in <code>C:\DoubleCheck\</code> after the flagged scan.
       <div class="note">Open it and confirm it contains a row with the case number and a timestamp. It should have exactly two columns — no empty merge fields.</div></div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.6</span> Scan a second flagged barcode. Confirm the new row is <strong>appended</strong> to the existing file rather than overwriting it.</div></li>
+    <div><span class="step">3.5</span> Scan a second flagged barcode. Confirm the new row is <strong>appended</strong> to the existing file rather than overwriting it.</div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.7</span> Repeat with one barcode from the <strong>C13xxxxx</strong>, <strong>C14xxxxx</strong>, and <strong>C15xxxxx</strong> ranges to confirm all flagged ranges alert correctly.</div></li>
+    <div><span class="step">3.6</span> Repeat with one barcode from the <strong>C13xxxxx</strong>, <strong>C14xxxxx</strong>, and <strong>C15xxxxx</strong> ranges to confirm all flagged ranges alert correctly.</div></li>
 </ul>
 
 <!-- ─────────────────────────────────────────────────────────── -->
@@ -93,47 +89,16 @@
     <div><span class="step">4.1</span> At the scan prompt, type <code>1100099</code> (no C prefix) and press Enter.
       <div class="note">Simulates a volunteer manually keying in a number when the card won't scan.</div></div></li>
   <li><input type="checkbox">
-    <div><span class="step">4.2</span> App displays <code>C1100099</code> with a green ✓.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">4.3</span> Type <code>C1100099</code> (with C prefix) and confirm the app handles it the same way.</div></li>
+    <div><span class="step">4.2</span> Type <code>C1100099</code> (with C prefix) and confirm the app handles it the same way.</div></li>
 </ul>
 
 <!-- ─────────────────────────────────────────────────────────── -->
-<h2>5 — InvNmbrs.csv auto-creation</h2>
-<p style="font-size:0.9rem; color:#555; margin-top:0;">Close the app, then delete <code>C:\DoubleCheck\InvNmbrs.csv</code>, then restart.</p>
+<h2>5 — Exit</h2>
 <ul>
   <li><input type="checkbox">
-    <div><span class="step">5.1</span> The on-screen notice appears:<br>
-      <code>NOTE: InvNmbrs.csv was not found and has been created automatically.</code></div></li>
+    <div><span class="step">5.1</span> Press Enter on a blank scan prompt.</div></li>
   <li><input type="checkbox">
-    <div><span class="step">5.2</span> <code>C:\DoubleCheck\InvNmbrs.csv</code> now exists and contains exactly two lines: the contact row and the <code>Case #</code> header.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">5.3</span> No barcodes are flagged (the new file has no case numbers in it).</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">5.4</span> Restore <code>InvNmbrs.csv</code> from the fixture before continuing: copy <code>tests\fixtures\InvNmbrs.csv</code> back to <code>C:\DoubleCheck\</code>.</div></li>
-</ul>
-
-<!-- ─────────────────────────────────────────────────────────── -->
-<h2>6 — InvNmbrs.csv format validation</h2>
-<p style="font-size:0.9rem; color:#555; margin-top:0;">Add a malformed row to <code>C:\DoubleCheck\InvNmbrs.csv</code> (e.g. append the line <code>BADROW</code>), then restart the app.</p>
-<ul>
-  <li><input type="checkbox">
-    <div><span class="step">6.1</span> The app starts without crashing.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">6.2</span> <code>BADROW</code> no longer appears in <code>InvNmbrs.csv</code> after startup.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">6.3</span> <code>InvNmbrs_errors.log</code> exists in <code>C:\DoubleCheck\</code> and records the removed row.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">6.4</span> Restore <code>InvNmbrs.csv</code> from the fixture before continuing.</div></li>
-</ul>
-
-<!-- ─────────────────────────────────────────────────────────── -->
-<h2>7 — Exit</h2>
-<ul>
-  <li><input type="checkbox">
-    <div><span class="step">7.1</span> Press Enter on a blank scan prompt.</div></li>
-  <li><input type="checkbox">
-    <div><span class="step">7.2</span> App prints <em>Barcodes saved to: scanned_barcodes…csv</em> and closes cleanly.</div></li>
+    <div><span class="step">5.2</span> App prints <em>Barcodes saved to: scanned_barcodes…csv</em> and closes cleanly.</div></li>
 </ul>
 
 <!-- ─────────────────────────────────────────────────────────── -->

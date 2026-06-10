@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Terminal UI Mocks — FoodPantryListGenerator</title>
+  <style>
+    /* ── Page ── */
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    h1 {
+      color: #a0c4ff;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin: 0 0 0.25rem;
+    }
+
+    .label {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 0.6rem;
+    }
+
+    /* ── Terminal window chrome ── */
+    .terminal-wrap {
+      display: inline-block;
+    }
+
+    .chrome {
+      background: #3a3a3a;
+      border-radius: 8px 8px 0 0;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid #222;
+    }
+
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red    { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green  { background: #28c840; }
+
+    .chrome-title {
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 0.72rem;
+      color: #aaa;
+      font-family: monospace;
+    }
+
+    /* ── Terminal body ── */
+    .terminal {
+      background: #0c0c0c;
+      border-radius: 0 0 8px 8px;
+      padding: 1.2rem 1.4rem;
+      font-family: "Cascadia Mono", "Consolas", "Courier New", monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: #cccccc;
+      width: 700px;
+      box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    /* ── ANSI colour helpers ── */
+    /* Bold white on red — flagged / already-served */
+    .ansi-red-bg {
+      background: #c0392b;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 0.15em 0.3em;
+      display: inline-block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Bold green — duplicate */
+    .ansi-green {
+      color: #3ecf4a;
+      font-weight: bold;
+    }
+
+    /* Dim prompt text */
+    .prompt { color: #cccccc; }
+
+    /* Cursor blink */
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background: #cccccc;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .dim { color: #777; }
+    .url { color: #5a9bd5; }
+  </style>
+</head>
+<body>
+
+  <!-- ── 1. Startup ── -->
+  <div>
+    <h1>1 — Startup</h1>
+    <div class="label">Shown once when the program opens. The volunteer sees the output filename and how many records are already saved.</div>
+    <div class="terminal-wrap">
+      <div class="chrome">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="chrome-title">FoodPantryListGenerator.exe</span>
+      </div>
+      <div class="terminal">
+        <div>Output file:  scanned_barcodes20260607.csv</div>
+        <div>Records already in file: 0</div>
+        <div>Recent release:  <span class="url">https://github.com/G-IV/FoodPantryListGenerator/releases/latest</span></div>
+        <div>&nbsp;</div>
+        <div>Scan a barcode, or press Enter to exit.</div>
+        <div>&nbsp;</div>
+        <div class="prompt">Record 1 — Please scan a barcode: <span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. Normal scan ── -->
+  <div>
+    <h1>2 — Normal scan accepted</h1>
+    <div class="label">After a clean barcode is scanned, the counter increments and the next prompt appears immediately.</div>
+    <div class="terminal-wrap">
+      <div class="chrome">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="chrome-title">FoodPantryListGenerator.exe</span>
+      </div>
+      <div class="terminal">
+        <div>Scan a barcode, or press Enter to exit.</div>
+        <div>&nbsp;</div>
+        <div class="prompt">Record 1 — Please scan a barcode: <span class="dim">C1052089</span></div>
+        <div class="prompt">Record 2 — Please scan a barcode: <span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. Duplicate scan (green) ── -->
+  <div>
+    <h1>3 — Duplicate scan banner</h1>
+    <div class="label">Shown when the same barcode is scanned twice in a row. The scan is not recorded again. The volunteer should proceed to the next customer.</div>
+    <div class="terminal-wrap">
+      <div class="chrome">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="chrome-title">FoodPantryListGenerator.exe</span>
+      </div>
+      <div class="terminal">
+        <div class="prompt">Record 2 — Please scan a barcode: <span class="dim">C1052089</span></div>
+        <div>&nbsp;</div>
+        <div><span class="ansi-green">  Duplicate scan — proceed to next customer  </span></div>
+        <div>&nbsp;</div>
+        <div class="prompt">Record 2 — Please scan a barcode: <span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. Flagged scan (red) ── -->
+  <div>
+    <h1>4 — Flagged scan banner</h1>
+    <div class="label">Shown when a barcode on the administrator's flagged list is scanned. The scan is not recorded. The volunteer should ask a cart guide to escort the customer to the Oasis administrator.</div>
+    <div class="terminal-wrap">
+      <div class="chrome">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="chrome-title">FoodPantryListGenerator.exe</span>
+      </div>
+      <div class="terminal">
+        <div class="prompt">Record 2 — Please scan a barcode: <span class="dim">C1300001</span></div>
+        <div>&nbsp;</div>
+        <div><span class="ansi-red-bg">  This barcode has been flagged, please ask a cart guide to escort customer to Oasis administrator  </span></div>
+        <div>&nbsp;</div>
+        <div class="prompt">Record 2 — Please scan a barcode: <span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. Exit ── -->
+  <div>
+    <h1>5 — Exiting</h1>
+    <div class="label">Volunteer presses Enter on a blank prompt to end the session. The output filename is confirmed.</div>
+    <div class="terminal-wrap">
+      <div class="chrome">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="chrome-title">FoodPantryListGenerator.exe</span>
+      </div>
+      <div class="terminal">
+        <div class="prompt">Record 5 — Please scan a barcode: </div>
+        <div>&nbsp;</div>
+        <div>Barcodes saved to: scanned_barcodes20260607.csv</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

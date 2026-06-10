@@ -124,7 +124,6 @@ class TestMainLockGuard:
             patch("FoodPantryListGenerator.append_flagged_record"),
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers", return_value=set()),
-            patch("FoodPantryListGenerator.read_admin_contact", return_value=None),
             patch("os.path.isfile", return_value=True),
             patch("os.path.getmtime", return_value=1000.0),
             patch("builtins.print"),

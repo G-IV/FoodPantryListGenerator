@@ -112,9 +112,8 @@ On Windows, PID existence is checked via `ctypes.OpenProcess` with `PROCESS_QUER
 
 Manages `InvNmbrs.csv` — the flagged case number list maintained by the Oasis Administrator. Provides three public functions:
 
-- `validate_and_clean_invnmbrs(path, error_log_path)` — scans rows 3+ on startup; removes any row that is not a valid `C`+digits case number, rewrites the file, and appends removed rows to `InvNmbrs_errors.log`. Only called if the file exists.
+- `validate_and_clean_invnmbrs(path, error_log_path)` — scans rows 2+ on startup; removes any row that is not a valid `C`+digits case number, rewrites the file, and appends removed rows to `InvNmbrs_errors.log`. Only called if the file exists.
 - `read_invalid_numbers(path)` — returns the current set of flagged case numbers. Returns an empty set if the file is absent. Called on every scan so mid-session changes (including the file being placed or removed) take effect immediately.
-- `read_admin_contact(path)` — returns the formatted contact string from row 1 for display in the flag banner. Returns `None` if the file is absent.
 
 `ensure_invnmbrs_exists(path)` remains in the module for reference but is no longer called by the application. If `InvNmbrs.csv` is absent the program runs normally with no flagged barcodes.
 
@@ -286,18 +285,14 @@ Synthetic test fixtures covering all of these scenarios are in `tests/fixtures/`
 
 An optional file placed in `C:\DoubleCheck\` by the pantry administrator to block flagged case numbers from being logged. It is **not** committed to the repository — it is operational data that lives only on the production machine.
 
-**On first run the application creates the file automatically** if it does not exist, writing a skeleton with just the two header rows and no flagged case numbers. The administrator can then open it in Notepad to add their contact details and any case numbers to flag.
-
 **Format:**
 
 | Row | Content | Example |
 |-----|---------|---------|
-| 1 | Administrator contact — `Name,Phone` | `Pantry Admin,(555) 867-5309` |
-| 2 | Column header (ignored by the app) | `Case #` |
-| 3+ | One flagged case number per row | `C1052089` |
+| 1 | Column header (ignored by the app) | `Case #` |
+| 2+ | One flagged case number per row | `C1052089` |
 
 ```
-Pantry Admin,(555) 867-5309
 Case #
 C1052089
 C1052090
@@ -305,15 +300,13 @@ C1052090
 
 Key behaviours:
 
-- **On first run**, if the file does not exist, the application creates a skeleton automatically and prints a one-time notice prompting the administrator to open the file and fill in their contact details on line 1.
 - The file is re-read on every scan, so changes take effect immediately without restarting the application.
 - When a flagged barcode is scanned, a red banner is printed, the scan is **not** written to the scanned barcodes CSV, and the case number + timestamp **are** written to the [flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv). Scanning continues immediately with no blocking prompt.
 - Once the administrator removes a case number from the file, the next scan of that barcode is logged normally.
-- Row 1 is used as the contact string in the banner. If row 1 is absent or blank, the banner still displays but omits the contact line.
 
 **Format validation:**
 
-At startup the application checks every case number row (row 3+). A valid row is a `C` followed by digits — e.g. `C1052089`. Any row that does not match this pattern is removed from the file and written to `InvNmbrs_errors.log` (in the same folder) so the data is not lost. Blank rows are dropped silently without logging. The first two header rows are never touched.
+At startup the application checks every case number row (row 2+). A valid row is a `C` followed by digits — e.g. `C1052089`. Any row that does not match this pattern is removed from the file and written to `InvNmbrs_errors.log` (in the same folder) so the data is not lost. Blank rows are dropped silently without logging. The header row is never touched.
 
 ---
 
@@ -552,6 +545,6 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Scanner | [Tera D5100 2D Wireless Barcode Scanner](https://tera-digital.com/products/2d-barcode-scanner-d5100) (connects via USB dongle; user manual in `docs/`) |
 | Install location | `C:\DoubleCheck\` |
 | Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all clean scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (admin-flagged scans — created only when at least one such scan occurs) |
-| Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (auto-created on first run; managed by the pantry administrator) |
+| Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (managed by the pantry administrator; place in `C:\DoubleCheck\` to enable) |
 | Lock file | `C:\DoubleCheck\FoodPantryListGenerator.lock` (created at startup, removed on exit; stale locks are cleaned up automatically) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |
