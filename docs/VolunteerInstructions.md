@@ -170,25 +170,6 @@ The file is now ready. See [Adding a Flagged Case Number](#adding-a-flagged-case
 
 ---
 
-### Creating the File Manually
-
-To create `InvNmbrs.csv` from scratch:
-
-1. Open **File Explorer** and navigate to `This PC > Windows (C:) > DoubleCheck`.
-2. Right-click in the folder, choose **New > Text Document**.
-3. Name the file `InvNmbrs.csv` — be sure to include `.csv` and remove the default `.txt` extension.
-   - If you do not see file extensions in File Explorer, go to **View > Show > File name extensions** and check the box.
-4. Right-click the file and choose **Open with > Notepad**.
-5. Type the column header on the first line:
-
-```
-Case #
-```
-
-6. Save the file (`Ctrl+S`).
-
----
-
 ### Adding a Flagged Case Number
 
 1. Open `C:\DoubleCheck\InvNmbrs.csv` in Notepad.
