@@ -87,11 +87,11 @@ class TestReadInvalidNumbers:
 # ---------------------------------------------------------------------------
 
 class TestFormatFlagBanner:
-    def test_shows_escort_message(self):
-        """The flagged banner shows the escort instruction message."""
+    def test_shows_customer_scan_in_problems_instruction(self):
+        """The flagged banner tells the volunteer where to write scan-in details."""
         lines = format_flag_banner("C1052089")
         combined = "\n".join(lines)
-        assert "escort customer to Oasis administrator" in combined
+        assert "Customer Scan-In Problems" in combined
 
     def test_no_contact_line(self):
         """No contact info appears in the banner."""
@@ -104,8 +104,9 @@ class TestFormatFlagBanner:
         assert any("\033[" in line for line in lines)
 
     def test_body_explains_flagged_reason(self):
-        """The banner body tells the volunteer to ask a cart guide to escort the customer."""
+        """The banner body includes the new write-down + escort instruction."""
         lines = format_flag_banner("C1052089")
+        assert any("write the data from the barcode card/image" in line for line in lines)
         assert any("escort customer to Oasis administrator" in line for line in lines)
 
 
