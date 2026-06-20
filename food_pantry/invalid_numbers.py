@@ -161,7 +161,11 @@ def format_flag_banner(case_number: str) -> list:
     """
     return [
         "",
-        f"{_RED}  This barcode has been flagged, please ask a cart guide to escort customer to Oasis administrator  {_RESET}",
+        (
+            f"{_RED}  This barcode has been flagged. Please write the data from the barcode "
+            f"card/image on the \"Customer Scan-In Problems\" form on the small clipboard, "
+            f"then ask a cart guide to escort customer to Oasis administrator.  {_RESET}"
+        ),
         "",
     ]
 

@@ -132,7 +132,7 @@ class TestFlaggedScan:
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
         )
-        assert any("escort customer to Oasis administrator" in line for line in printed)
+        assert any("Customer Scan-In Problems" in line for line in printed)
 
     def test_banner_contains_case_number(self):
         """The flagged banner message is shown (case number is not part of the new message)."""
@@ -140,7 +140,7 @@ class TestFlaggedScan:
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
         )
-        assert any("escort customer to Oasis administrator" in line for line in printed)
+        assert any("Customer Scan-In Problems" in line for line in printed)
 
     def test_banner_no_contact_in_flagged_banner(self):
         """No contact info is shown in the flagged banner."""
@@ -262,7 +262,7 @@ class TestMidSessionFileUpdate:
             app.main()
 
         assert len(mock_appends) == 1          # only first scan written
-        assert any("escort customer to Oasis administrator" in line for line in printed_lines)  # banner on second scan
+        assert any("Customer Scan-In Problems" in line for line in printed_lines)  # banner on second scan
 
     def test_case_removed_from_invnmbrs_mid_session_is_logged(self):
         """
@@ -366,7 +366,7 @@ class TestConsecutiveDuplicate:
         )
         mock_append.assert_not_called()
         mock_flagged_append.assert_called_once()
-        assert any("escort customer to Oasis administrator" in line for line in printed)
+        assert any("Customer Scan-In Problems" in line for line in printed)
         assert not any("proceed to next customer" in line for line in printed)
 
 
@@ -432,7 +432,7 @@ class TestAlreadyServedScan:
         )
         mock_append.assert_not_called()
         mock_flagged_append.assert_called_once()
-        assert any("escort customer to Oasis administrator" in line for line in printed)
+        assert any("Customer Scan-In Problems" in line for line in printed)
 
     def test_rescan_does_not_show_duplicate_banner(self):
         """A non-consecutive re-scan (A, B, A) does not show the green duplicate banner."""
