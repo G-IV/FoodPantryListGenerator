@@ -11,10 +11,12 @@ tests first so the change is intentional and documented.
 import os
 import pytest
 from food_pantry.invalid_numbers import (
+    DEFAULT_FLAGGED_MESSAGE_LINES,
     ensure_invnmbrs_exists,
     format_already_served_banner,
     format_duplicate_banner,
     format_flag_banner,
+    read_flagged_message,
     read_invalid_numbers,
     validate_and_clean_invnmbrs,
 )
@@ -93,10 +95,10 @@ class TestFormatFlagBanner:
         combined = "\n".join(lines)
         assert "Customer Scan-In Problems" in combined
 
-    def test_no_contact_line(self):
-        """No contact info appears in the banner."""
+    def test_includes_contact_line(self):
+        """The default banner includes administrator contact info."""
         lines = format_flag_banner("C1052089")
-        assert not any("Contact" in line for line in lines)
+        assert any("Oasis Administrator" in line for line in lines)
 
     def test_uses_red_ansi(self):
         """The flagged banner uses ANSI red escape codes."""
@@ -104,10 +106,54 @@ class TestFormatFlagBanner:
         assert any("\033[" in line for line in lines)
 
     def test_body_explains_flagged_reason(self):
-        """The banner body includes the new write-down + escort instruction."""
+        """The banner body includes the write-down and text-image instructions."""
         lines = format_flag_banner("C1052089")
         assert any("write the data from the barcode card/image" in line for line in lines)
-        assert any("escort customer to Oasis administrator" in line for line in lines)
+        assert any("Text the image to the Oasis Administrator" in line for line in lines)
+
+    def test_custom_message_lines_override_default(self):
+        """Caller-provided message lines are used when supplied."""
+        lines = format_flag_banner("C1052089", ["Line A", "Line B"])
+        assert any("Line A" in line for line in lines)
+        assert any("Line B" in line for line in lines)
+        assert not any("Customer Scan-In Problems" in line for line in lines)
+
+
+# ---------------------------------------------------------------------------
+# read_flagged_message — file-based flagged message with fallback defaults
+# ---------------------------------------------------------------------------
+
+class TestReadFlaggedMessage:
+    def test_absent_file_returns_default(self, tmp_path):
+        """When message file is absent, default message lines are used."""
+        result = read_flagged_message(str(tmp_path / "flagged_message.txt"))
+        assert result == DEFAULT_FLAGGED_MESSAGE_LINES
+
+    def test_non_empty_file_returns_exact_lines(self, tmp_path):
+        """A populated message file is returned line-for-line."""
+        f = tmp_path / "flagged_message.txt"
+        f.write_text("Line 1\n   Indented line\nLine 3\n")
+        result = read_flagged_message(str(f))
+        assert result == ["Line 1", "   Indented line", "Line 3"]
+
+    def test_blank_only_file_returns_default(self, tmp_path):
+        """A file with only blank lines falls back to defaults."""
+        f = tmp_path / "flagged_message.txt"
+        f.write_text("\n   \n\n")
+        result = read_flagged_message(str(f))
+        assert result == DEFAULT_FLAGGED_MESSAGE_LINES
+
+    def test_read_error_returns_default(self, tmp_path, monkeypatch):
+        """I/O errors while reading the file fall back to defaults."""
+        f = tmp_path / "flagged_message.txt"
+        f.write_text("Line 1\n")
+
+        def _boom(*args, **kwargs):
+            raise OSError("simulated read failure")
+
+        monkeypatch.setattr("builtins.open", _boom)
+        result = read_flagged_message(str(f))
+        assert result == DEFAULT_FLAGGED_MESSAGE_LINES
 
 
 # ---------------------------------------------------------------------------
