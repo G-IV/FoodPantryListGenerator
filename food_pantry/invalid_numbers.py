@@ -27,6 +27,8 @@ For local development, place it in the project root (same directory as
 FoodPantryListGenerator.py).
 """
 
+from __future__ import annotations
+
 import datetime
 import os
 import re
@@ -36,6 +38,15 @@ _RED = "\033[1;97;41m"
 _GREEN = "\033[1;32m"
 _RESET = "\033[0m"
 _CASE_NUMBER_RE = re.compile(r"^C\d+$")
+
+# Default flagged banner text used when no external message file exists.
+DEFAULT_FLAGGED_MESSAGE_LINES = [
+    "This barcode has been flagged.",
+    "Please write the data from the barcode card/image",
+    '   on the "Customer Scan-In Problems" form.',
+    "Take a picture of the card/image using your phone.",
+    "Text the image to the Oasis Administrator: Tina Tarbox (512) 492-5957",
+]
 
 
 def ensure_invnmbrs_exists(path: str) -> bool:
@@ -145,7 +156,35 @@ def read_invalid_numbers(path: str) -> set:
     return flagged
 
 
-def format_flag_banner(case_number: str) -> list:
+def read_flagged_message(path: str) -> list[str]:
+    """
+    Return flagged-banner message lines from a plain-text file.
+
+    If the file does not exist, cannot be read, or contains no non-blank text,
+    a built-in default message is returned.
+
+    Args:
+        path: Absolute or relative path to a plain-text message file.
+
+    Returns:
+        A list of message lines to render in the flagged red banner.
+    """
+    if not os.path.isfile(path):
+        return list(DEFAULT_FLAGGED_MESSAGE_LINES)
+
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            lines = [line.rstrip("\r\n") for line in fh.readlines()]
+    except OSError:
+        return list(DEFAULT_FLAGGED_MESSAGE_LINES)
+
+    if not any(line.strip() for line in lines):
+        return list(DEFAULT_FLAGGED_MESSAGE_LINES)
+
+    return lines
+
+
+def format_flag_banner(case_number: str, message_lines: list[str] | None = None) -> list:
     """
     Return the lines to print when a flagged barcode is scanned.
 
@@ -155,19 +194,18 @@ def format_flag_banner(case_number: str) -> list:
 
     Args:
         case_number: The normalized case number that was flagged.
+        message_lines: Optional banner text lines to show; when omitted,
+            built-in defaults are used.
 
     Returns:
         A list of strings to be printed, one per line.
     """
-    return [
-        "",
-        (
-            f"{_RED}  This barcode has been flagged. Please write the data from the barcode "
-            f"card/image on the \"Customer Scan-In Problems\" form on the small clipboard, "
-            f"then ask a cart guide to escort customer to Oasis administrator.  {_RESET}"
-        ),
-        "",
-    ]
+    lines = message_lines if message_lines is not None else DEFAULT_FLAGGED_MESSAGE_LINES
+    rendered = [""]
+    for line in lines:
+        rendered.append(f"{_RED}  {line}  {_RESET}")
+    rendered.append("")
+    return rendered
 
 
 def format_duplicate_banner(case_number: str) -> list:

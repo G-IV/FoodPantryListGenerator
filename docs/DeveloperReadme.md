@@ -89,7 +89,7 @@ FoodPantryListGenerator/
 └── .gitignore
 ```
 
-> **Runtime files (not in the repo):** On first run the application creates `InvNmbrs.csv` in its working directory (`C:\DoubleCheck\` in production) if it does not already exist. The file is a skeleton with just the two header rows — the administrator fills in their contact details and adds case numbers to flag. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. Additionally, whenever a flagged barcode is scanned the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory; whenever an already-served re-scan is detected it creates (or appends to) `already_served20YYMMDD.csv`. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) and [Already-served log](#already-served-log---already_served20yymmddcsv) for their formats. While the application is running it also holds a `FoodPantryListGenerator.lock` file in the working directory to prevent a second instance from starting; the lock file is removed on exit and cleaned up automatically if left behind by a crash.
+> **Runtime files (not in the repo):** `InvNmbrs.csv` is optional and must be created manually in the working directory (`C:\DoubleCheck\` in production) to enable flagged-barcode blocking. See the [InvNmbrs.csv format](#invnmbrscsv) section for details. `flagged_message.txt` is also optional; when present, it controls the red flagged-banner text shown to volunteers. If this file is missing, unreadable, or blank-only, the application uses built-in default banner text. Additionally, whenever a flagged barcode is scanned the application creates (or appends to) `flagged_barcodes20YYMMDD.csv` in the same directory; whenever an already-served re-scan is detected it creates (or appends to) `already_served20YYMMDD.csv`. See [Flagged barcode log](#flagged-barcode-log---flagged_barcodes20yymmddcsv) and [Already-served log](#already-served-log---already_served20yymmddcsv) for their formats. While the application is running it also holds a `FoodPantryListGenerator.lock` file in the working directory to prevent a second instance from starting; the lock file is removed on exit and cleaned up automatically if left behind by a crash.
 
 ---
 
@@ -97,7 +97,7 @@ FoodPantryListGenerator/
 
 ### `FoodPantryListGenerator.py`
 
-The entry point. Contains `main()`, which acquires a single-instance lock via `lock.py` before starting a session — if another instance is already running it prints a message and exits. The scanning work is done in `_run_session()`: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for flagged scans, and exits on blank input. Non-consecutive re-scans of an already-served barcode are silently ignored (no output, no log file) — the detection code is in place and can be re-enabled. Consecutive duplicate scans display a calm green reassurance message via `format_duplicate_banner()`. At startup it calls `validate_and_clean_invnmbrs()` if `InvNmbrs.csv` is present; if the file is absent it is silently skipped. The flagged set and its mtime are refreshed on every scan — if the file appears mid-session it will be picked up automatically. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
+The entry point. Contains `main()`, which acquires a single-instance lock via `lock.py` before starting a session — if another instance is already running it prints a message and exits. The scanning work is done in `_run_session()`: prompts for input, calls `parse_barcode()`, checks for flagged case numbers via `invalid_numbers.py`, calls `append_record()` for clean scans, calls `append_flagged_record()` for flagged scans, and exits on blank input. Non-consecutive re-scans of an already-served barcode are silently ignored (no output, no log file) — the detection code is in place and can be re-enabled. Consecutive duplicate scans display a calm green reassurance message via `format_duplicate_banner()`. At startup it calls `validate_and_clean_invnmbrs()` if `InvNmbrs.csv` is present; if the file is absent it is silently skipped. The flagged set and its mtime are refreshed on every scan — if the file appears mid-session it will be picked up automatically. The optional flagged-banner message file (`flagged_message.txt`) is also loaded at startup and refreshed when its mtime changes so wording updates can be made without rebuilding the executable. It contains no business logic beyond wiring these pieces together — if you find yourself adding logic here, it probably belongs in a module inside `food_pantry/` instead.
 
 ### `food_pantry/lock.py`
 
@@ -110,10 +110,12 @@ On Windows, PID existence is checked via `ctypes.OpenProcess` with `PROCESS_QUER
 
 ### `food_pantry/invalid_numbers.py`
 
-Manages `InvNmbrs.csv` — the flagged case number list maintained by the Oasis Administrator. Provides three public functions:
+Manages `InvNmbrs.csv` — the flagged case number list maintained by the Oasis Administrator — and the optional `flagged_message.txt` banner text override. Provides these public functions:
 
 - `validate_and_clean_invnmbrs(path, error_log_path)` — scans rows 2+ on startup; removes any row that is not a valid `C`+digits case number, rewrites the file, and appends removed rows to `InvNmbrs_errors.log`. Only called if the file exists.
 - `read_invalid_numbers(path)` — returns the current set of flagged case numbers. Returns an empty set if the file is absent. Called on every scan so mid-session changes (including the file being placed or removed) take effect immediately.
+- `read_flagged_message(path)` — returns banner message lines from `flagged_message.txt` when available, otherwise returns built-in defaults.
+- `format_flag_banner(case_number, message_lines=None)` — applies ANSI red styling to the configured/default message lines.
 
 `ensure_invnmbrs_exists(path)` remains in the module for reference but is no longer called by the application. If `InvNmbrs.csv` is absent the program runs normally with no flagged barcodes.
 
@@ -307,6 +309,28 @@ Key behaviours:
 **Format validation:**
 
 At startup the application checks every case number row (row 2+). A valid row is a `C` followed by digits — e.g. `C1052089`. Any row that does not match this pattern is removed from the file and written to `InvNmbrs_errors.log` (in the same folder) so the data is not lost. Blank rows are dropped silently without logging. The header row is never touched.
+
+### flagged_message.txt (optional)
+
+An optional plain-text file placed in `C:\DoubleCheck\` by the pantry administrator to customize the red flagged barcode banner shown to volunteers.
+
+**Path:**
+
+```
+C:\DoubleCheck\flagged_message.txt
+```
+
+**Format:**
+
+- One line in the file maps to one line in the red banner.
+- Leading spaces are preserved, so indentation can be controlled intentionally.
+- If the file is missing, unreadable, or contains only blank lines, built-in default message text is used.
+
+**Operational behavior:**
+
+- The file is read at startup and re-read during the session whenever its modification time changes.
+- Message edits can be made in Notepad and saved during pantry without restarting the app.
+- This file is operational data and should not be committed to the repository.
 
 ---
 
@@ -546,5 +570,6 @@ See the [GitHub Issues](https://github.com/G-IV/FoodPantryListGenerator/issues) 
 | Install location | `C:\DoubleCheck\` |
 | Output files | `C:\DoubleCheck\scanned_barcodes20YYMMDD.csv` (all clean scans), `C:\DoubleCheck\flagged_barcodes20YYMMDD.csv` (admin-flagged scans — created only when at least one such scan occurs) |
 | Flagged numbers file | `C:\DoubleCheck\InvNmbrs.csv` (managed by the pantry administrator; place in `C:\DoubleCheck\` to enable) |
+| Flagged message file (optional) | `C:\DoubleCheck\flagged_message.txt` (customizes red flagged-banner text; defaults are used when missing/blank) |
 | Lock file | `C:\DoubleCheck\FoodPantryListGenerator.lock` (created at startup, removed on exit; stale locks are cleaned up automatically) |
 | Backup device | A second Surface Pro (labeled "M") with the same software installed |
