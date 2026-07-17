@@ -113,7 +113,7 @@ Volunteers do not need to read this section. Administrators do not need to read 
 
 <!-- TODO (Tina): Add a brief description of the Oasis Admin's broader pantry-day responsibilities here — e.g. staffing the Oasis stations, reviewing records, handling flagged cases, etc. This section should give a new admin enough context to understand where the InvNmbrs.csv task fits into the overall pantry workflow. -->
 
-The task specific to the List Generator is: **maintaining `InvNmbrs.csv`**, a file on the Surface Pro that controls which case numbers are blocked from being logged at the scan-in station. See the sections below for how to manage it.
+The task specific to the List Generator is maintaining `InvNmbrs.csv`, a file on the Surface Pro that controls which case numbers are blocked from being logged at the scan-in station. You can also optionally maintain `flagged_message.txt` to customize the exact red banner text shown to volunteers when a blocked barcode is scanned.
 
 ---
 
@@ -122,7 +122,11 @@ The task specific to the List Generator is: **maintaining `InvNmbrs.csv`**, a fi
 When a volunteer scans a barcode that appears in `InvNmbrs.csv`, the screen immediately displays a red banner like this:
 
 ```
-   This barcode has been flagged. Please write the data from the barcode card/image on the "Customer Scan-In Problems" form on the small clipboard, then ask a cart guide to escort customer to Oasis administrator.
+   This barcode has been flagged.
+   Please write the data from the barcode card/image
+      on the "Customer Scan-In Problems" form.
+   Take a picture of the card/image using your phone.
+   Text the image to the Oasis Administrator: Tina Tarbox (512) 492-5957
 ```
 
 The volunteer will then pause and contact you using the information shown in the banner. **Scanning continues normally after the flagged scan** — no action is required from the volunteer beyond contacting you. The flagged case number is **not** written to the scanned output file, but it **is** recorded in a separate flagged barcode log for your review (see [Reviewing the Flagged Barcode Log](#reviewing-the-flagged-barcode-log) below).
@@ -144,6 +148,28 @@ C:\DoubleCheck\InvNmbrs.csv
 If the file is absent the program runs normally — all barcodes are treated as valid and no flagging occurs.
 
 The List Generator reads this file every time a barcode is scanned, so any changes you make take effect immediately — you do not need to restart the program.
+
+---
+
+### Optional: Customize the Flagged Banner Message
+
+If you want to change the red banner wording without installing a new application release, create this optional file:
+
+```
+C:\DoubleCheck\flagged_message.txt
+```
+
+How to set it up:
+
+1. Open Notepad.
+2. Type the exact message text you want volunteers to see, with one banner line per line in the file.
+3. Save the file as `flagged_message.txt` in `C:\DoubleCheck\`.
+
+Important behavior:
+
+1. Leading spaces are kept, so you can control indentation for screenshots.
+2. The application re-reads this file when it changes, so updates take effect without restarting.
+3. If the file is missing, unreadable, or contains only blank lines, the built-in default message is used automatically.
 
 ---
 

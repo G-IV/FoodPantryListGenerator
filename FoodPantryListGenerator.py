@@ -40,6 +40,7 @@ from food_pantry.invalid_numbers import (
     format_already_served_banner,
     format_duplicate_banner,
     format_flag_banner,
+    read_flagged_message,
     read_invalid_numbers,
     validate_and_clean_invnmbrs,
 )
@@ -73,6 +74,7 @@ def _run_session() -> None:
     already_served_filepath = os.path.join(os.getcwd(), already_served_filename)
     invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
     error_log_path = os.path.join(os.getcwd(), "InvNmbrs_errors.log")
+    flagged_message_path = os.path.join(os.getcwd(), "flagged_message.txt")
 
     # Only validate/clean if the file exists; skip silently if absent.
     if os.path.isfile(invnmbrs_path):
@@ -83,6 +85,10 @@ def _run_session() -> None:
     today_scanned_set = read_existing_case_numbers(filepath, today)
     flagged_set = read_invalid_numbers(invnmbrs_path)
     flagged_mtime = os.path.getmtime(invnmbrs_path) if os.path.isfile(invnmbrs_path) else None
+    flagged_message_lines = read_flagged_message(flagged_message_path)
+    flagged_message_mtime = (
+        os.path.getmtime(flagged_message_path) if os.path.isfile(flagged_message_path) else None
+    )
 
     print(f"Output file:  {filename}")
     print(f"Records already in file: {record_count}")
@@ -107,6 +113,14 @@ def _run_session() -> None:
             flagged_set = read_invalid_numbers(invnmbrs_path)
             flagged_mtime = current_mtime
 
+        # Refresh banner text when flagged_message.txt changes.
+        current_msg_mtime = (
+            os.path.getmtime(flagged_message_path) if os.path.isfile(flagged_message_path) else None
+        )
+        if current_msg_mtime != flagged_message_mtime:
+            flagged_message_lines = read_flagged_message(flagged_message_path)
+            flagged_message_mtime = current_msg_mtime
+
         # Check 2: blocked by administrator.
         if case_number in flagged_set:
             now = datetime.datetime.now()
@@ -114,7 +128,7 @@ def _run_session() -> None:
             # Keep duplicate suppression aligned to the most recent scan event,
             # even when the scan is blocked as flagged.
             last_scanned = case_number
-            for line in format_flag_banner(case_number):
+            for line in format_flag_banner(case_number, flagged_message_lines):
                 print(line)
             continue
 
@@ -123,7 +137,7 @@ def _run_session() -> None:
             if case_number in flagged_set:
                 now = datetime.datetime.now()
                 append_flagged_record(flagged_filepath, case_number, now)
-                for line in format_flag_banner(case_number):
+                for line in format_flag_banner(case_number, flagged_message_lines):
                     print(line)
                 continue
             # Re-check passed — genuine consecutive duplicate scan.

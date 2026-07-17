@@ -41,6 +41,9 @@ def _run_main(inputs, flagged_set, existing_records=0, last_scanned=None,
     def capture_print(*args, **kwargs):
         printed_lines.append(args[0] if args else "")
 
+    def fake_isfile(path):
+        return str(path).endswith("InvNmbrs.csv")
+
     with (
         patch("FoodPantryListGenerator.acquire_lock", return_value=True),
         patch("FoodPantryListGenerator.release_lock"),
@@ -54,7 +57,7 @@ def _run_main(inputs, flagged_set, existing_records=0, last_scanned=None,
         patch("FoodPantryListGenerator.append_already_served_record") as mock_already_served_append,
         patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
         patch("FoodPantryListGenerator.read_invalid_numbers", return_value=flagged_set),
-        patch("os.path.isfile", return_value=True),
+        patch("os.path.isfile", side_effect=fake_isfile),
         patch("os.path.getmtime", return_value=1000.0),
         patch("builtins.print", side_effect=capture_print),
     ):
@@ -143,20 +146,20 @@ class TestFlaggedScan:
         assert any("Customer Scan-In Problems" in line for line in printed)
 
     def test_banner_no_contact_in_flagged_banner(self):
-        """No contact info is shown in the flagged banner."""
+        """The flagged banner includes administrator contact info."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
         )
-        assert not any("Contact" in line for line in printed)
+        assert any("Oasis Administrator" in line for line in printed)
 
     def test_banner_escort_message_shown(self):
-        """Flagged banner shows the escort message."""
+        """Flagged banner shows the text-image escalation message."""
         _, _, _, printed = _run_main(
             inputs=["{[C]01052089}", ""],
             flagged_set={"C1052089"},
         )
-        assert any("escort customer to Oasis administrator" in line for line in printed)
+        assert any("Text the image to the Oasis Administrator" in line for line in printed)
 
     def test_scanning_continues_after_flagged_scan(self):
         """After a flagged scan the loop continues; subsequent scans proceed."""
@@ -200,6 +203,9 @@ class TestRecordCounter:
             # Yield three calls: flagged scan, unflagged scan, exit
             return ["{[C]01052089}", "{[C]01052090}", ""][len(prompt_calls) - 1]
 
+        def fake_isfile(path):
+            return str(path).endswith("InvNmbrs.csv")
+
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
@@ -211,7 +217,7 @@ class TestRecordCounter:
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
                   return_value={"C1052089"}),
-            patch("os.path.isfile", return_value=True),
+            patch("os.path.isfile", side_effect=fake_isfile),
             patch("os.path.getmtime", return_value=1000.0),
             patch("builtins.print"),
         ):
@@ -241,6 +247,9 @@ class TestMidSessionFileUpdate:
         def capture_print(*args, **kwargs):
             printed_lines.append(args[0] if args else "")
 
+        def fake_isfile(path):
+            return str(path).endswith("InvNmbrs.csv")
+
         mock_appends = []
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
@@ -255,7 +264,7 @@ class TestMidSessionFileUpdate:
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
                   side_effect=[set(), {"C1052089"}]),
-            patch("os.path.isfile", return_value=True),
+            patch("os.path.isfile", side_effect=fake_isfile),
             patch("os.path.getmtime", side_effect=[1000.0, 1000.0, 2000.0]),
             patch("builtins.print", side_effect=capture_print),
         ):
@@ -270,6 +279,9 @@ class TestMidSessionFileUpdate:
         the next scan of that barcode should be logged normally.
         """
         mock_appends = []
+        def fake_isfile(path):
+            return str(path).endswith("InvNmbrs.csv")
+
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
@@ -283,7 +295,7 @@ class TestMidSessionFileUpdate:
             patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
             patch("FoodPantryListGenerator.read_invalid_numbers",
                   side_effect=[{"C1052089"}, set()]),
-            patch("os.path.isfile", return_value=True),
+            patch("os.path.isfile", side_effect=fake_isfile),
             patch("os.path.getmtime", side_effect=[1000.0, 1000.0, 2000.0, 2000.0]),
             patch("builtins.print"),
         ):
@@ -291,6 +303,74 @@ class TestMidSessionFileUpdate:
 
         assert len(mock_appends) == 2          # second and third scans written after removal
         assert mock_appends[1][1] == "C1052089"
+
+
+class TestFlaggedMessageConfig:
+    def test_custom_message_file_used_for_flagged_banner(self):
+        """When flagged_message.txt exists, its text is shown in the red banner."""
+        printed_lines = []
+
+        def capture_print(*args, **kwargs):
+            printed_lines.append(args[0] if args else "")
+
+        def fake_isfile(path):
+            p = str(path)
+            return p.endswith("InvNmbrs.csv") or p.endswith("flagged_message.txt")
+
+        with (
+            patch("FoodPantryListGenerator.acquire_lock", return_value=True),
+            patch("FoodPantryListGenerator.release_lock"),
+            patch("builtins.input", side_effect=["{[C]01052089}", ""]),
+            patch("FoodPantryListGenerator.count_existing_records", return_value=0),
+            patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
+            patch("FoodPantryListGenerator.read_existing_case_numbers", return_value=set()),
+            patch("FoodPantryListGenerator.append_record"),
+            patch("FoodPantryListGenerator.append_flagged_record"),
+            patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
+            patch("FoodPantryListGenerator.read_invalid_numbers", return_value={"C1052089"}),
+            patch("FoodPantryListGenerator.read_flagged_message", return_value=["CUSTOM ALERT"]) as mock_read_msg,
+            patch("os.path.isfile", side_effect=fake_isfile),
+            patch("os.path.getmtime", side_effect=[1000.0, 3000.0, 1000.0, 3000.0]),
+            patch("builtins.print", side_effect=capture_print),
+        ):
+            app.main()
+
+        mock_read_msg.assert_called_once()
+        assert any("CUSTOM ALERT" in line for line in printed_lines)
+        assert not any("Customer Scan-In Problems" in line for line in printed_lines)
+
+    def test_message_file_change_mid_session_updates_banner_text(self):
+        """A modified flagged_message.txt is picked up without restarting the app."""
+        printed_lines = []
+
+        def capture_print(*args, **kwargs):
+            printed_lines.append(args[0] if args else "")
+
+        def fake_isfile(path):
+            p = str(path)
+            return p.endswith("InvNmbrs.csv") or p.endswith("flagged_message.txt")
+
+        with (
+            patch("FoodPantryListGenerator.acquire_lock", return_value=True),
+            patch("FoodPantryListGenerator.release_lock"),
+            patch("builtins.input", side_effect=["{[C]01052089}", "{[C]01052089}", ""]),
+            patch("FoodPantryListGenerator.count_existing_records", return_value=0),
+            patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
+            patch("FoodPantryListGenerator.read_existing_case_numbers", return_value=set()),
+            patch("FoodPantryListGenerator.append_record"),
+            patch("FoodPantryListGenerator.append_flagged_record"),
+            patch("FoodPantryListGenerator.validate_and_clean_invnmbrs"),
+            patch("FoodPantryListGenerator.read_invalid_numbers", return_value={"C1052089"}),
+            patch("FoodPantryListGenerator.read_flagged_message", side_effect=[["MESSAGE V1"], ["MESSAGE V2"]]) as mock_read_msg,
+            patch("os.path.isfile", side_effect=fake_isfile),
+            patch("os.path.getmtime", side_effect=[1000.0, 3000.0, 1000.0, 3000.0, 1000.0, 4000.0]),
+            patch("builtins.print", side_effect=capture_print),
+        ):
+            app.main()
+
+        assert mock_read_msg.call_count == 2
+        assert any("MESSAGE V1" in line for line in printed_lines)
+        assert any("MESSAGE V2" in line for line in printed_lines)
 
 
 # ---------------------------------------------------------------------------
