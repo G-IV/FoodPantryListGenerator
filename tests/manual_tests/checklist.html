@@ -70,9 +70,9 @@
     <div><span class="step">3.1</span> Scan any <strong>C12xxxxx</strong> barcode from the test sheet.
       <div class="note">These ARE in InvNmbrs.csv — an alert banner should appear.</div></div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.2</span> The banner shows the escort message and does <strong>not</strong> contain any contact name or phone number.</div></li>
+    <div><span class="step">3.2</span> The banner text exactly matches the current contents of <code>flagged_message.txt</code>.</div></li>
   <li><input type="checkbox">
-    <div><span class="step">3.3</span> The flagged case number does <strong>not</strong> appear in the output CSV after exiting.</div></li>
+    <div><span class="step">3.3</span> The flagged case number does <strong>not</strong> appear in <code>scanned_barcodes20YYMMDD.csv</code> after exiting.</div></li>
   <li><input type="checkbox">
     <div><span class="step">3.4</span> A file named <code>flagged_barcodes20YYMMDD.csv</code> (today's date) exists in <code>C:\DoubleCheck\</code> after the flagged scan.
       <div class="note">Open it and confirm it contains a row with the case number and a timestamp. It should have exactly two columns — no empty merge fields.</div></div></li>
@@ -89,7 +89,9 @@
     <div><span class="step">4.1</span> At the scan prompt, type <code>1100099</code> (no C prefix) and press Enter.
       <div class="note">Simulates a volunteer manually keying in a number when the card won't scan.</div></div></li>
   <li><input type="checkbox">
-    <div><span class="step">4.2</span> Type <code>C1100099</code> (with C prefix) and confirm the app handles it the same way.</div></li>
+    <div><span class="step">4.2</span> Type <code>C1100099</code> (with C prefix). Confirm a <em>Duplicate scan — proceed to next customer</em> message is shown.</div></li>
+  <li><input type="checkbox">
+    <div><span class="step">4.3</span> Type <code>C1100010</code> (with C prefix) and confirm it is accepted as a normal scan (no duplicate message).</div></li>
 </ul>
 
 <!-- ─────────────────────────────────────────────────────────── -->
