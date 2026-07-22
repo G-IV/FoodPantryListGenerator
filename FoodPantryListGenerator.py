@@ -37,6 +37,7 @@ from food_pantry.csv_writer import (
     read_last_case_number,
 )
 from food_pantry.invalid_numbers import (
+    ensure_flagged_message_exists,
     format_already_served_banner,
     format_duplicate_banner,
     format_flag_banner,
@@ -75,6 +76,9 @@ def _run_session() -> None:
     invnmbrs_path = os.path.join(os.getcwd(), "InvNmbrs.csv")
     error_log_path = os.path.join(os.getcwd(), "InvNmbrs_errors.log")
     flagged_message_path = os.path.join(os.getcwd(), "flagged_message.txt")
+
+    # Create a default flagged-message file if none exists.
+    ensure_flagged_message_exists(flagged_message_path)
 
     # Only validate/clean if the file exists; skip silently if absent.
     if os.path.isfile(invnmbrs_path):

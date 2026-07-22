@@ -47,6 +47,7 @@ def _run_main(inputs, flagged_set, existing_records=0, last_scanned=None,
     with (
         patch("FoodPantryListGenerator.acquire_lock", return_value=True),
         patch("FoodPantryListGenerator.release_lock"),
+        patch("FoodPantryListGenerator.ensure_flagged_message_exists"),
         patch("builtins.input", side_effect=inputs),
         patch("FoodPantryListGenerator.count_existing_records", return_value=existing_records),
         patch("FoodPantryListGenerator.read_last_case_number", return_value=last_scanned),
@@ -209,6 +210,7 @@ class TestRecordCounter:
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
+            patch("FoodPantryListGenerator.ensure_flagged_message_exists"),
             patch("builtins.input", side_effect=capture_input),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
@@ -254,6 +256,7 @@ class TestMidSessionFileUpdate:
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
+            patch("FoodPantryListGenerator.ensure_flagged_message_exists"),
             patch("builtins.input", side_effect=["{[C]01052089}", "{[C]01052089}", ""]),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
@@ -285,6 +288,7 @@ class TestMidSessionFileUpdate:
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
+            patch("FoodPantryListGenerator.ensure_flagged_message_exists"),
             patch("builtins.input", side_effect=["{[C]01052089}", "{[C]01052090}", "{[C]01052089}", ""]),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
@@ -320,6 +324,7 @@ class TestFlaggedMessageConfig:
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
+            patch("FoodPantryListGenerator.ensure_flagged_message_exists"),
             patch("builtins.input", side_effect=["{[C]01052089}", ""]),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
@@ -353,6 +358,7 @@ class TestFlaggedMessageConfig:
         with (
             patch("FoodPantryListGenerator.acquire_lock", return_value=True),
             patch("FoodPantryListGenerator.release_lock"),
+            patch("FoodPantryListGenerator.ensure_flagged_message_exists"),
             patch("builtins.input", side_effect=["{[C]01052089}", "{[C]01052089}", ""]),
             patch("FoodPantryListGenerator.count_existing_records", return_value=0),
             patch("FoodPantryListGenerator.read_last_case_number", return_value=None),
