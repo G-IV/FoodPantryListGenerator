@@ -12,6 +12,7 @@ import os
 import pytest
 from food_pantry.invalid_numbers import (
     DEFAULT_FLAGGED_MESSAGE_LINES,
+    ensure_flagged_message_exists,
     ensure_invnmbrs_exists,
     format_already_served_banner,
     format_duplicate_banner,
@@ -154,6 +155,28 @@ class TestReadFlaggedMessage:
         monkeypatch.setattr("builtins.open", _boom)
         result = read_flagged_message(str(f))
         assert result == DEFAULT_FLAGGED_MESSAGE_LINES
+
+
+# ---------------------------------------------------------------------------
+# ensure_flagged_message_exists — creates default banner file if absent
+# ---------------------------------------------------------------------------
+
+class TestEnsureFlaggedMessageExists:
+    def test_creates_file_with_default_lines_when_absent(self, tmp_path):
+        """If flagged_message.txt is missing, it is created with default text."""
+        path = tmp_path / "flagged_message.txt"
+        created = ensure_flagged_message_exists(str(path))
+        assert created is True
+        assert path.exists()
+        assert path.read_text(encoding="utf-8").splitlines() == DEFAULT_FLAGGED_MESSAGE_LINES
+
+    def test_does_not_overwrite_existing_file(self, tmp_path):
+        """If flagged_message.txt exists, it is left unchanged."""
+        path = tmp_path / "flagged_message.txt"
+        path.write_text("Custom line\n", encoding="utf-8")
+        created = ensure_flagged_message_exists(str(path))
+        assert created is False
+        assert path.read_text(encoding="utf-8") == "Custom line\n"
 
 
 # ---------------------------------------------------------------------------

@@ -49,6 +49,30 @@ DEFAULT_FLAGGED_MESSAGE_LINES = [
 ]
 
 
+def ensure_flagged_message_exists(path: str) -> bool:
+    """
+    Create flagged_message.txt with default banner text if it does not exist.
+
+    Args:
+        path: Absolute or relative path to flagged_message.txt.
+
+    Returns:
+        True if the file was created, False if it already existed or could
+        not be created.
+    """
+    if os.path.isfile(path):
+        return False
+
+    try:
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            fh.write("\r\n".join(DEFAULT_FLAGGED_MESSAGE_LINES))
+            fh.write("\r\n")
+    except OSError:
+        return False
+
+    return True
+
+
 def ensure_invnmbrs_exists(path: str) -> bool:
     """
     Create InvNmbrs.csv with a skeleton structure if it does not exist.
